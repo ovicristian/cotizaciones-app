@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { Plus, Edit, Trash2 } from 'lucide-react'
+import { Plus, Edit, Trash2, Search } from 'lucide-react'
 import CreateCliente from '../components/clientes/CreateCliente'
 import EditCliente from '../components/clientes/EditCliente'
 
@@ -9,6 +9,7 @@ export default function Clientes() {
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingCliente, setEditingCliente] = useState(null)
+  const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
     fetchClientes()
@@ -29,6 +30,17 @@ export default function Clientes() {
     setLoading(false)
   }
 
+  const filteredClientes = clientes.filter(cliente => {
+    const term = searchTerm.toLowerCase()
+    return (
+      cliente.nombre?.toLowerCase().includes(term) ||
+      cliente.pais?.toLowerCase().includes(term) ||
+      cliente.ciudad?.toLowerCase().includes(term) ||
+      cliente.email?.toLowerCase().includes(term) ||
+      cliente.nit?.toLowerCase().includes(term)
+    )
+  })
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -42,12 +54,30 @@ export default function Clientes() {
         </button>
       </div>
 
+      {/* Barra de búsqueda */}
+      <div className="mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <input
+            type="text"
+            placeholder="Buscar por nombre, país, ciudad, email o NIT..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+      </div>
+
       <div className="bg-white rounded-lg shadow overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-gray-500">Cargando...</div>
         ) : clientes.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             No hay clientes registrados. Haz clic en "Nuevo Cliente" para agregar uno.
+          </div>
+        ) : filteredClientes.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">
+            No se encontraron clientes que coincidan con la búsqueda.
           </div>
         ) : (
           <table className="min-w-full divide-y divide-gray-200">
@@ -74,7 +104,7 @@ export default function Clientes() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {clientes.map((cliente) => (
+              {filteredClientes.map((cliente) => (
                 <tr key={cliente.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {cliente.nombre}

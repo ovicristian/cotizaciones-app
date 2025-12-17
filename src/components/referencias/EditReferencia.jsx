@@ -7,6 +7,7 @@ export default function EditReferencia({ referencia, onClose, onSuccess }) {
     nombre: '',
     descripcion: '',
     familia: '',
+    codigo_arancelario: '',
     precio_cop: '',
     peso_unitario: '',
     cantidad_minima_caja: '',
@@ -23,6 +24,7 @@ export default function EditReferencia({ referencia, onClose, onSuccess }) {
         nombre: referencia.nombre || '',
         descripcion: referencia.descripcion || '',
         familia: referencia.familia || '',
+        codigo_arancelario: referencia.codigo_arancelario || '',
         precio_cop: referencia.precio_cop || '',
         peso_unitario: referencia.peso_unitario || '',
         cantidad_minima_caja: referencia.cantidad_minima_caja || '',
@@ -53,6 +55,7 @@ export default function EditReferencia({ referencia, onClose, onSuccess }) {
           nombre: formData.nombre,
           descripcion: formData.descripcion,
           familia: formData.familia,
+          codigo_arancelario: formData.codigo_arancelario || null,
           precio_cop: parseFloat(formData.precio_cop) || null,
           peso_unitario: parseFloat(formData.peso_unitario) || null,
           cantidad_minima_caja: parseInt(formData.cantidad_minima_caja) || null,
@@ -127,6 +130,21 @@ export default function EditReferencia({ referencia, onClose, onSuccess }) {
               value={formData.descripcion}
               onChange={handleChange}
               rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Código Arancelario */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Posición Arancelaria / HTS Code
+            </label>
+            <input
+              type="text"
+              name="codigo_arancelario"
+              value={formData.codigo_arancelario}
+              onChange={handleChange}
+              placeholder="Ej: 8481.80.99.00"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>

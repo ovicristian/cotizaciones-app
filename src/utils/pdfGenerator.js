@@ -43,6 +43,13 @@ export const generateProformaPDF = async (cotizacionId) => {
 
     if (refsError) throw refsError
 
+    // Ordenar referencias por número de caja
+    const sortedRefs = refs.sort((a, b) => {
+      const cajaA = a.numero_caja || 999999
+      const cajaB = b.numero_caja || 999999
+      return cajaA - cajaB
+    })
+
     const doc = new jsPDF()
     const pageWidth = doc.internal.pageSize.width
     const margin = 15
@@ -72,13 +79,13 @@ export const generateProformaPDF = async (cotizacionId) => {
     doc.setFontSize(9)
     doc.setFont('helvetica', 'normal')
     const proformaNum = cotizacion.numero_cotizacion || `${cotizacion.id.toString().padStart(3, '0')}`
-    doc.rect(pageWidth - 55, 10, 40, 8)
-    doc.text('PROFORMA N°:', pageWidth - 53, 15)
-    doc.text(proformaNum, pageWidth - 20, 15)
+    doc.rect(pageWidth - 60, 10, 45, 8)
+    doc.text('PROFORMA N°:', pageWidth - 58, 15)
+    doc.text(proformaNum, pageWidth - 30, 15)
     
-    doc.rect(pageWidth - 55, 18, 40, 8)
-    doc.text('FECHA / DATE:', pageWidth - 53, 23)
-    doc.text(new Date(cotizacion.created_at).toLocaleDateString(), pageWidth - 20, 23)
+    doc.rect(pageWidth - 60, 18, 45, 8)
+    doc.text('FECHA / DATE:', pageWidth - 58, 23)
+    doc.text(new Date(cotizacion.created_at).toLocaleDateString(), pageWidth - 33, 23)
 
     // EXPORTADOR / MANUFACTURER section
     let y = 40
@@ -170,25 +177,34 @@ export const generateProformaPDF = async (cotizacionId) => {
     // Products table
     y = doc.lastAutoTable.finalY + 5
     
-    const tableData = refs.map(ref => {
+    const tableData = sortedRefs.map(ref => {
       const referencia = ref.referencias
       const precioCOP = ref.precio_modificado_cop || referencia.precio_cop || 0
       const precioUSD = (precioCOP / cotizacion.tasa_cambio).toFixed(2)
       const totalUSD = (precioUSD * ref.cantidad).toFixed(2)
       
-      // Combine código and nombre with dash separator
+      // Build complete description: codigo - nombre - descripcion
       const codigo = referencia?.codigo || ''
       const nombre = referencia?.nombre || ''
-      const descripcion = codigo && nombre ? `${codigo} - ${nombre}` : codigo || nombre || 'Sin descripción'
+      const descripcionRef = referencia?.descripcion || ''
       
-      // Debug log
-      console.log('Referencia data:', { codigo, nombre, descripcion, referencia })
+      let descripcionCompleta = ''
+      if (codigo && nombre && descripcionRef) {
+        descripcionCompleta = `${codigo} - ${nombre} - ${descripcionRef}`
+      } else if (codigo && nombre) {
+        descripcionCompleta = `${codigo} - ${nombre}`
+      } else if (codigo && descripcionRef) {
+        descripcionCompleta = `${codigo} - ${descripcionRef}`
+      } else if (nombre && descripcionRef) {
+        descripcionCompleta = `${nombre} - ${descripcionRef}`
+      } else {
+        descripcionCompleta = codigo || nombre || descripcionRef || 'Sin descripción'
+      }
       
       return [
-        '', // # DE PALLETS
-        '', // # DE CAJAS
+        ref.numero_caja || '', // # DE CAJAS
         referencia?.codigo_arancelario || '', // HTS CODE
-        descripcion, // DESCRIPCIÓN (código + nombre)
+        descripcionCompleta, // DESCRIPCIÓN COMPLETA
         ref.cantidad.toString(), // UNIDADES
         `$${precioUSD}`, // PRECIO UNITARIO
         `$${totalUSD}` // TOTAL
@@ -198,8 +214,7 @@ export const generateProformaPDF = async (cotizacionId) => {
     autoTable(doc, {
       startY: y,
       head: [[
-        '# DE PALLETS / # OF PALLETS',
-        '# DE CAJAS / # OF BOXES',
+        '# DE CAJA / BOX #',
         'POSICIÓN ARANCELARIA\nHTS CODE',
         'DESCRIPCIÓN / DESCRIPTION',
         'UNIDADES O\nCANTIDAD /\nUNITS OR\nPACKAGES',
@@ -221,19 +236,18 @@ export const generateProformaPDF = async (cotizacionId) => {
         valign: 'middle'
       },
       columnStyles: {
-        0: { halign: 'center', cellWidth: 18 },
-        1: { halign: 'center', cellWidth: 18 },
-        2: { halign: 'center', cellWidth: 22 },
-        3: { halign: 'left', cellWidth: 50, overflow: 'linebreak' },
-        4: { halign: 'center', cellWidth: 18 },
-        5: { halign: 'right', cellWidth: 22 },
-        6: { halign: 'right', cellWidth: 22 }
+        0: { halign: 'center', cellWidth: 20 },
+        1: { halign: 'center', cellWidth: 24 },
+        2: { halign: 'left', cellWidth: 60, overflow: 'linebreak' },
+        3: { halign: 'center', cellWidth: 20 },
+        4: { halign: 'right', cellWidth: 24 },
+        5: { halign: 'right', cellWidth: 24 }
       }
     })
 
     // Totals
     y = doc.lastAutoTable.finalY
-    const subtotal = refs.reduce((sum, ref) => {
+    const subtotal = sortedRefs.reduce((sum, ref) => {
       const precio = ref.precio_modificado_cop || ref.referencias.precio_cop || 0
       const precioUSD = precio / cotizacion.tasa_cambio
       return sum + (precioUSD * ref.cantidad)
@@ -253,7 +267,7 @@ export const generateProformaPDF = async (cotizacionId) => {
       theme: 'plain',
       styles: { fontSize: 9, cellPadding: 2 },
       columnStyles: {
-        0: { halign: 'right', fontStyle: 'bold', cellWidth: 165 },
+        0: { halign: 'right', fontStyle: 'bold', cellWidth: 155 },
         1: { halign: 'right', cellWidth: 25, fillColor: [240, 240, 240] }
       }
     })
