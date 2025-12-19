@@ -38,10 +38,18 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
   }
 
   const fetchReferencias = async () => {
-    const { data } = await supabase
+    // Supabase limita por defecto a 1000 registros. Usamos un límite alto.
+    const { data, error, count } = await supabase
       .from('referencias')
-      .select('*')
+      .select('*', { count: 'exact' })
       .order('nombre')
+      .limit(10000) // Límite alto para asegurar que se obtengan todas
+    
+    if (error) {
+      console.error('Error fetching referencias:', error)
+    } else {
+      console.log(`Cargadas ${data?.length || 0} referencias de ${count} totales para cotización`)
+    }
     setReferencias(data || [])
   }
 

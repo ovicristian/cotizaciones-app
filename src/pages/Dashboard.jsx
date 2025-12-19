@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { Users, FileText, Package } from 'lucide-react'
+import DiagnosticoReferencias from '../components/DiagnosticoReferencias'
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -46,6 +47,9 @@ export default function Dashboard() {
   return (
     <div>
       <h1 className="text-3xl font-bold text-gray-800 mb-6">Dashboard</h1>
+      
+      {/* Componente de diagnóstico - Eliminar después de resolver el problema */}
+      <DiagnosticoReferencias />
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-lg shadow">
