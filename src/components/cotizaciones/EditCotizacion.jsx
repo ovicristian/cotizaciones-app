@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { X, Save, Plus, Trash2 } from 'lucide-react'
 import Select from 'react-select'
+import ImportProductosExcel from './ImportProductosExcel'
 
 export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
   const [clientes, setClientes] = useState([])
@@ -18,7 +19,8 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
     unidades_carga: cotizacion.unidades_carga || '',
     dimension_l: cotizacion.dimension_l || '',
     dimension_w: cotizacion.dimension_w || '',
-    dimension_h: cotizacion.dimension_h || ''
+    dimension_h: cotizacion.dimension_h || '',
+    observaciones: cotizacion.observaciones || ''
   })
   const [selectedRefs, setSelectedRefs] = useState([])
   const [loading, setLoading] = useState(false)
@@ -40,11 +42,35 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
   }
 
   const fetchReferencias = async () => {
-    const { data } = await supabase
-      .from('referencias')
-      .select('*')
-      .order('nombre')
-    setReferencias(data || [])
+    try {
+      // Cargar todas las referencias usando paginación
+      let allReferencias = []
+      let from = 0
+      const pageSize = 1000 // Máximo permitido por Supabase
+      let hasMore = true
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('referencias')
+          .select('*')
+          .order('nombre')
+          .range(from, from + pageSize - 1)
+
+        if (error) {
+          console.error('Error fetching referencias:', error)
+          hasMore = false
+        } else {
+          allReferencias = [...allReferencias, ...(data || [])]
+          hasMore = data && data.length === pageSize
+          from += pageSize
+        }
+      }
+
+      setReferencias(allReferencias)
+      console.log(`Referencias cargadas para editar cotización: ${allReferencias.length}`)
+    } catch (error) {
+      console.error('Error general al cargar referencias:', error)
+    }
   }
 
   const fetchCotizacionReferencias = async () => {
@@ -101,6 +127,11 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
     const updated = [...selectedRefs]
     updated[index][field] = value
     setSelectedRefs(updated)
+  }
+
+  const handleImportProductos = (productos) => {
+    // Agregar los productos importados a las referencias existentes
+    setSelectedRefs(prev => [...prev, ...productos])
   }
 
   const calcularCajasAutomaticamente = () => {
@@ -240,7 +271,8 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
           unidades_carga: formData.unidades_carga ? parseInt(formData.unidades_carga) : null,
           dimension_l: formData.dimension_l ? parseFloat(formData.dimension_l) : null,
           dimension_w: formData.dimension_w ? parseFloat(formData.dimension_w) : null,
-          dimension_h: formData.dimension_h ? parseFloat(formData.dimension_h) : null
+          dimension_h: formData.dimension_h ? parseFloat(formData.dimension_h) : null,
+          observaciones: formData.observaciones || null
         })
         .eq('id', cotizacion.id)
 
@@ -559,6 +591,12 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
               </div>
             </div>
 
+            {/* Importar desde Excel */}
+            <ImportProductosExcel 
+              referencias={referencias}
+              onImport={handleImportProductos}
+            />
+
             {loadingRefs ? (
               <div className="text-center py-8 text-gray-500">Cargando referencias...</div>
             ) : selectedRefs.length === 0 ? (
@@ -685,6 +723,21 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
               <Plus size={18} />
               Agregar Referencia
             </button>
+          </div>
+
+          {/* Observaciones */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Observaciones
+            </label>
+            <textarea
+              name="observaciones"
+              value={formData.observaciones}
+              onChange={handleChange}
+              rows="4"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Si se deja vacío, se usará el texto predeterminado con datos bancarios, flete, seguro y puertos. Puedes personalizarlo aquí."
+            />
           </div>
 
           {/* Error */}

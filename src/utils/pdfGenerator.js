@@ -89,6 +89,7 @@ export const generateProformaPDF = async (cotizacionId) => {
 
     // EXPORTADOR / MANUFACTURER section
     let y = 40
+    const leftColWidth = 40 // Ancho máximo para la columna izquierda (reducido para evitar overlap)
     doc.setFontSize(9)
     doc.setFont('helvetica', 'bold')
     doc.text('EXPORTADOR / MANUFACTURER', margin, y)
@@ -96,61 +97,84 @@ export const generateProformaPDF = async (cotizacionId) => {
     doc.setFont('helvetica', 'normal')
     y += 5
     doc.text('Empresa / Company Name:', margin, y)
-    doc.text(company.nombre, margin + 50, y)
+    const nombreLines = doc.splitTextToSize(company.nombre, leftColWidth)
+    doc.text(nombreLines, margin + 50, y)
+    y += (nombreLines.length - 1) * 4 // Ajustar espacio según líneas
     
     y += 5
     doc.text('NIT / NIF / VAT Num:', margin, y)
-    doc.text(company.nit || '', margin + 50, y)
+    const nitLines = doc.splitTextToSize(company.nit || '', leftColWidth)
+    doc.text(nitLines, margin + 50, y)
+    y += (nitLines.length - 1) * 4
     
     y += 5
     doc.text('Nombre / Name:', margin, y)
-    doc.text(company.vendedor || '', margin + 50, y)
+    const vendedorLines = doc.splitTextToSize(company.vendedor || '', leftColWidth)
+    doc.text(vendedorLines, margin + 50, y)
+    y += (vendedorLines.length - 1) * 4
     
     y += 5
     doc.text('Dirección / Address:', margin, y)
-    doc.text(company.direccion || '', margin + 50, y)
+    const direccionLines = doc.splitTextToSize(company.direccion || '', leftColWidth)
+    doc.text(direccionLines, margin + 50, y)
+    y += (direccionLines.length - 1) * 4
     
     y += 5
     doc.text('Ciudad / City / País / Country:', margin, y)
-    doc.text(`${company.ciudad || ''}, ${company.pais || ''}`, margin + 50, y)
+    const ciudadLines = doc.splitTextToSize(`${company.ciudad || ''}, ${company.pais || ''}`, leftColWidth)
+    doc.text(ciudadLines, margin + 50, y)
+    y += (ciudadLines.length - 1) * 4
     
     y += 5
     doc.text('Teléfono / Phone:', margin, y)
-    doc.text(company.telefono || '', margin + 50, y)
+    const telefonoLines = doc.splitTextToSize(company.telefono || '', leftColWidth)
+    doc.text(telefonoLines, margin + 50, y)
 
     // DESTINATARIO / CONSIGNEE section
-    y = 40
+    let yRight = 40
     const rightCol = pageWidth / 2 + 10
+    const rightColWidth = 40 // Ancho máximo para la columna derecha (reducido para evitar salirse de márgenes)
     doc.setFont('helvetica', 'bold')
-    doc.text('DESTINATARIO / CONSIGNEE', rightCol, y)
+    doc.text('DESTINATARIO / CONSIGNEE', rightCol, yRight)
     
     doc.setFont('helvetica', 'normal')
-    y += 5
-    doc.text('Empresa / Company Name:', rightCol, y)
-    doc.text(cotizacion.clientes.nombre || '', rightCol + 50, y)
+    yRight += 5
+    doc.text('Empresa / Company Name:', rightCol, yRight)
+    const clienteNombreLines = doc.splitTextToSize(cotizacion.clientes.nombre || '', rightColWidth)
+    doc.text(clienteNombreLines, rightCol + 50, yRight)
+    yRight += (clienteNombreLines.length - 1) * 4
     
-    y += 5
-    doc.text('NIT / NIF / VAT Num:', rightCol, y)
-    doc.text(cotizacion.clientes.nit || '', rightCol + 50, y)
+    yRight += 5
+    doc.text('NIT / NIF / VAT Num:', rightCol, yRight)
+    const clienteNitLines = doc.splitTextToSize(cotizacion.clientes.nit || '', rightColWidth)
+    doc.text(clienteNitLines, rightCol + 50, yRight)
+    yRight += (clienteNitLines.length - 1) * 4
     
-    y += 5
-    doc.text('Nombre / Name:', rightCol, y)
-    doc.text(cotizacion.contacto_nombre || '', rightCol + 50, y)
+    yRight += 5
+    doc.text('Nombre / Name:', rightCol, yRight)
+    const contactoLines = doc.splitTextToSize(cotizacion.contacto_nombre || '', rightColWidth)
+    doc.text(contactoLines, rightCol + 50, yRight)
+    yRight += (contactoLines.length - 1) * 4
     
-    y += 5
-    doc.text('Dirección / Address:', rightCol, y)
-    doc.text(cotizacion.clientes.direccion || '', rightCol + 50, y)
+    yRight += 5
+    doc.text('Dirección / Address:', rightCol, yRight)
+    const clienteDireccionLines = doc.splitTextToSize(cotizacion.clientes.direccion || '', rightColWidth)
+    doc.text(clienteDireccionLines, rightCol + 50, yRight)
+    yRight += (clienteDireccionLines.length - 1) * 4
     
-    y += 5
-    doc.text('Ciudad / City / País / Country:', rightCol, y)
-    doc.text(cotizacion.clientes.pais || '', rightCol + 50, y)
+    yRight += 5
+    doc.text('Ciudad / City / País / Country:', rightCol, yRight)
+    const clientePaisLines = doc.splitTextToSize(cotizacion.clientes.pais || '', rightColWidth)
+    doc.text(clientePaisLines, rightCol + 50, yRight)
+    yRight += (clientePaisLines.length - 1) * 4
     
-    y += 5
-    doc.text('Teléfono / Phone:', rightCol, y)
-    doc.text(cotizacion.clientes.telefono || '', rightCol + 50, y)
+    yRight += 5
+    doc.text('Teléfono / Phone:', rightCol, yRight)
+    const clienteTelefonoLines = doc.splitTextToSize(cotizacion.clientes.telefono || '', rightColWidth)
+    doc.text(clienteTelefonoLines, rightCol + 50, yRight)
 
-    // Transport info table
-    y += 10
+    // Usar la posición Y más baja entre ambas columnas
+    y = Math.max(y, yRight) + 10
     autoTable(doc, {
       startY: y,
       head: [[
@@ -281,21 +305,32 @@ export const generateProformaPDF = async (cotizacionId) => {
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
     y += 5
-    const observations = [
-      'FORMA DE PAGO / PAYMENT METHOD: Bank transfer',
-      `DATOS BANCO / BANK INFORMATION:`,
-      `  Banco: ${company.banco_nombre || 'N/A'}`,
-      `  Cuenta: ${company.banco_cuenta || 'N/A'}`,
-      `  SWIFT: ${company.banco_swift || 'N/A'}`,
-      company.banco_aba ? `  ABA/Routing: ${company.banco_aba}` : null,
-      'FLETE / FREIGHT:',
-      'SEGURO / INSURANCE:',
-      'PUERTO DE SALIDA / PORT OF DEPARTURE:',
-      'PUERTO DE LLEGADA / PORT OF ARRIVAL:'
-    ].filter(Boolean)
     
-    observations.forEach(obs => {
-      doc.text(obs, margin, y)
+    // Usar observaciones personalizadas si existen, sino usar texto predeterminado
+    let observationsText = ''
+    if (cotizacion.observaciones && cotizacion.observaciones.trim()) {
+      observationsText = cotizacion.observaciones
+    } else {
+      // Texto predeterminado
+      const defaultObs = [
+        'FORMA DE PAGO / PAYMENT METHOD: Bank transfer',
+        `DATOS BANCO / BANK INFORMATION:`,
+        `  Banco: ${company.banco_nombre || 'N/A'}`,
+        `  Cuenta: ${company.banco_cuenta || 'N/A'}`,
+        `  SWIFT: ${company.banco_swift || 'N/A'}`,
+        company.banco_aba ? `  ABA/Routing: ${company.banco_aba}` : null,
+        'FLETE / FREIGHT:',
+        'SEGURO / INSURANCE:',
+        'PUERTO DE SALIDA / PORT OF DEPARTURE:',
+        'PUERTO DE LLEGADA / PORT OF ARRIVAL:'
+      ].filter(Boolean)
+      observationsText = defaultObs.join('\n')
+    }
+    
+    // Dividir el texto en líneas y renderizar
+    const obsLines = observationsText.split('\n')
+    obsLines.forEach(line => {
+      doc.text(line, margin, y)
       y += 4
     })
 

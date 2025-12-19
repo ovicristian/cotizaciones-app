@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { Plus, Edit, Trash2, FileText, Search } from 'lucide-react'
+import { Plus, Edit, Trash2, FileText, Search, FileDown } from 'lucide-react'
 import CreateCotizacion from '../components/cotizaciones/CreateCotizacion'
 import EditCotizacion from '../components/cotizaciones/EditCotizacion'
 import { generateProformaPDF } from '../utils/pdfGenerator'
+import { generateProformaWord } from '../utils/wordGenerator'
+import { generateProformaExcel } from '../utils/excelGenerator'
 
 export default function Cotizaciones() {
   const [cotizaciones, setCotizaciones] = useState([])
@@ -38,6 +40,53 @@ export default function Cotizaciones() {
     const result = await generateProformaPDF(cotizacionId)
     if (!result.success) {
       alert('Error al generar PDF: ' + result.error)
+    }
+  }
+
+  const handleGenerateWord = async (cotizacionId) => {
+    const result = await generateProformaWord(cotizacionId)
+    if (!result.success) {
+      alert('Error al generar documento Word: ' + result.error)
+    }
+  }
+
+  const handleGenerateExcel = async (cotizacionId) => {
+    const result = await generateProformaExcel(cotizacionId)
+    if (!result.success) {
+      alert('Error al generar archivo Excel: ' + result.error)
+    }
+  }
+
+  const handleDelete = async (cotizacion) => {
+    const confirmDelete = window.confirm(
+      `¿Estás seguro de que deseas eliminar la cotización ${cotizacion.numero_cotizacion}?\n\nEsta acción no se puede deshacer.`
+    )
+    
+    if (!confirmDelete) return
+
+    try {
+      // Primero eliminar las referencias asociadas
+      const { error: refsError } = await supabase
+        .from('cotizacion_referencias')
+        .delete()
+        .eq('cotizacion_id', cotizacion.id)
+
+      if (refsError) throw refsError
+
+      // Luego eliminar la cotización
+      const { error: cotizacionError } = await supabase
+        .from('cotizaciones')
+        .delete()
+        .eq('id', cotizacion.id)
+
+      if (cotizacionError) throw cotizacionError
+
+      // Actualizar la lista
+      await fetchCotizaciones()
+      alert('Cotización eliminada correctamente')
+    } catch (error) {
+      console.error('Error al eliminar cotización:', error)
+      alert('Error al eliminar cotización: ' + error.message)
     }
   }
 
@@ -136,19 +185,34 @@ export default function Cotizaciones() {
                     <div className="flex flex-col gap-2">
                       <button 
                         onClick={() => handleGeneratePDF(cotizacion.id)}
-                        className="flex items-center gap-2 text-green-600 hover:text-green-900 hover:bg-green-50 px-3 py-1.5 rounded transition-colors" 
+                        className="flex items-center gap-2 text-red-600 hover:text-red-900 hover:bg-red-50 px-3 py-1.5 rounded transition-colors" 
                       >
                         <FileText size={16} />
-                        <span className="text-sm font-medium">Generar PDF</span>
+                        <span className="text-sm font-medium">PDF</span>
+                      </button>
+                      <button 
+                        onClick={() => handleGenerateWord(cotizacion.id)}
+                        className="flex items-center gap-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 px-3 py-1.5 rounded transition-colors" 
+                      >
+                        <FileDown size={16} />
+                        <span className="text-sm font-medium">Word</span>
+                      </button>
+                      <button 
+                        onClick={() => handleGenerateExcel(cotizacion.id)}
+                        className="flex items-center gap-2 text-green-600 hover:text-green-900 hover:bg-green-50 px-3 py-1.5 rounded transition-colors" 
+                      >
+                        <FileDown size={16} />
+                        <span className="text-sm font-medium">Excel</span>
                       </button>
                       <button 
                         onClick={() => setEditingCotizacion(cotizacion)}
-                        className="flex items-center gap-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 px-3 py-1.5 rounded transition-colors"
+                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-1.5 rounded transition-colors"
                       >
                         <Edit size={16} />
                         <span className="text-sm font-medium">Editar</span>
                       </button>
                       <button 
+                        onClick={() => handleDelete(cotizacion)}
                         className="flex items-center gap-2 text-red-600 hover:text-red-900 hover:bg-red-50 px-3 py-1.5 rounded transition-colors"
                       >
                         <Trash2 size={16} />

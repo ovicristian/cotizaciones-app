@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { X, Save, Plus, Trash2 } from 'lucide-react'
 import Select from 'react-select'
+import ImportProductosExcel from './ImportProductosExcel'
 
 export default function CreateCotizacion({ onClose, onSuccess }) {
   const [clientes, setClientes] = useState([])
@@ -18,7 +19,8 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
     unidades_carga: '',
     dimension_l: '',
     dimension_w: '',
-    dimension_h: ''
+    dimension_h: '',
+    observaciones: ''
   })
   const [selectedRefs, setSelectedRefs] = useState([])
   const [loading, setLoading] = useState(false)
@@ -27,7 +29,40 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
   useEffect(() => {
     fetchClientes()
     fetchReferencias()
+    fetchEmpresaConfig()
   }, [])
+
+  const fetchEmpresaConfig = async () => {
+    try {
+      const { data } = await supabase
+        .from('empresa_config')
+        .select('*')
+        .single()
+      
+      if (data) {
+        // Pre-poblar observaciones con texto predeterminado
+        const defaultObs = [
+          'FORMA DE PAGO / PAYMENT METHOD: Bank transfer',
+          'DATOS BANCO / BANK INFORMATION:',
+          `  Banco: ${data.banco_nombre || 'N/A'}`,
+          `  Cuenta: ${data.banco_cuenta || 'N/A'}`,
+          `  SWIFT: ${data.banco_swift || 'N/A'}`,
+          data.banco_aba ? `  ABA/Routing: ${data.banco_aba}` : null,
+          'FLETE / FREIGHT:',
+          'SEGURO / INSURANCE:',
+          'PUERTO DE SALIDA / PORT OF DEPARTURE:',
+          'PUERTO DE LLEGADA / PORT OF ARRIVAL:'
+        ].filter(Boolean).join('\n')
+        
+        setFormData(prev => ({
+          ...prev,
+          observaciones: defaultObs
+        }))
+      }
+    } catch (error) {
+      console.error('Error al cargar configuración de empresa:', error)
+    }
+  }
 
   const fetchClientes = async () => {
     const { data } = await supabase
@@ -38,19 +73,35 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
   }
 
   const fetchReferencias = async () => {
-    // Supabase limita por defecto a 1000 registros. Usamos un límite alto.
-    const { data, error, count } = await supabase
-      .from('referencias')
-      .select('*', { count: 'exact' })
-      .order('nombre')
-      .limit(10000) // Límite alto para asegurar que se obtengan todas
-    
-    if (error) {
-      console.error('Error fetching referencias:', error)
-    } else {
-      console.log(`Cargadas ${data?.length || 0} referencias de ${count} totales para cotización`)
+    try {
+      // Cargar todas las referencias usando paginación
+      let allReferencias = []
+      let from = 0
+      const pageSize = 1000 // Máximo permitido por Supabase
+      let hasMore = true
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('referencias')
+          .select('*')
+          .order('nombre')
+          .range(from, from + pageSize - 1)
+
+        if (error) {
+          console.error('Error fetching referencias:', error)
+          hasMore = false
+        } else {
+          allReferencias = [...allReferencias, ...(data || [])]
+          hasMore = data && data.length === pageSize
+          from += pageSize
+        }
+      }
+
+      setReferencias(allReferencias)
+      console.log(`Referencias cargadas para cotización: ${allReferencias.length}`)
+    } catch (error) {
+      console.error('Error general al cargar referencias:', error)
     }
-    setReferencias(data || [])
   }
 
   const handleChange = (e) => {
@@ -73,6 +124,11 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
     const updated = [...selectedRefs]
     updated[index][field] = value
     setSelectedRefs(updated)
+  }
+
+  const handleImportProductos = (productos) => {
+    // Agregar los productos importados a las referencias existentes
+    setSelectedRefs(prev => [...prev, ...productos])
   }
 
   const handleSubmit = async (e) => {
@@ -105,6 +161,7 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
           dimension_l: formData.dimension_l ? parseFloat(formData.dimension_l) : null,
           dimension_w: formData.dimension_w ? parseFloat(formData.dimension_w) : null,
           dimension_h: formData.dimension_h ? parseFloat(formData.dimension_h) : null,
+          observaciones: formData.observaciones || null,
           user_id: user.id
         }])
         .select()
@@ -375,6 +432,12 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
           <div className="space-y-4">
             <h3 className="font-semibold text-lg text-gray-800">Referencias</h3>
 
+            {/* Importar desde Excel */}
+            <ImportProductosExcel 
+              referencias={referencias}
+              onImport={handleImportProductos}
+            />
+
             {selectedRefs.length === 0 ? (
               <div className="text-center py-8 text-gray-500 border-2 border-dashed rounded-lg">
                 No hay referencias. Haz clic en "Agregar Referencia" para empezar.
@@ -484,6 +547,21 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
               <Plus size={18} />
               Agregar Referencia
             </button>
+          </div>
+
+          {/* Observaciones */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Observaciones
+            </label>
+            <textarea
+              name="observaciones"
+              value={formData.observaciones}
+              onChange={handleChange}
+              rows="4"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Si se deja vacío, se usará el texto predeterminado con datos bancarios, flete, seguro y puertos. Puedes personalizarlo aquí."
+            />
           </div>
 
           {/* Error */}

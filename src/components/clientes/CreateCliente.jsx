@@ -132,21 +132,6 @@ export default function CreateCliente({ onClose, onSuccess }) {
             />
           </div>
 
-          {/* Ciudad */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Ciudad
-            </label>
-            <input
-              type="text"
-              name="ciudad"
-              value={formData.ciudad}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Ej: Miami"
-            />
-          </div>
-
           {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
