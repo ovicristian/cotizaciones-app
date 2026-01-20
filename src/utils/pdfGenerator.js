@@ -207,29 +207,23 @@ export const generateProformaPDF = async (cotizacionId) => {
       const precioUSD = (precioCOP / cotizacion.tasa_cambio).toFixed(2)
       const totalUSD = (precioUSD * ref.cantidad).toFixed(2)
       
-      // Build complete description: codigo - nombre - descripcion
-      const codigo = referencia?.codigo || ''
+      // Build description: nombre - descripcion (sin código propio)
       const nombre = referencia?.nombre || ''
       const descripcionRef = referencia?.descripcion || ''
       
       let descripcionCompleta = ''
-      if (codigo && nombre && descripcionRef) {
-        descripcionCompleta = `${codigo} - ${nombre} - ${descripcionRef}`
-      } else if (codigo && nombre) {
-        descripcionCompleta = `${codigo} - ${nombre}`
-      } else if (codigo && descripcionRef) {
-        descripcionCompleta = `${codigo} - ${descripcionRef}`
-      } else if (nombre && descripcionRef) {
+      if (nombre && descripcionRef) {
         descripcionCompleta = `${nombre} - ${descripcionRef}`
       } else {
-        descripcionCompleta = codigo || nombre || descripcionRef || 'Sin descripción'
+        descripcionCompleta = nombre || descripcionRef || 'Sin descripción'
       }
       
       return [
         ref.numero_caja || '', // # DE CAJAS
         referencia?.codigo_arancelario || '', // HTS CODE
+        referencia?.codigo || '', // CÓDIGO PROPIO
         ref.codigo_cliente || '', // CÓDIGO CLIENTE
-        descripcionCompleta, // DESCRIPCIÓN COMPLETA
+        descripcionCompleta, // DESCRIPCIÓN
         ref.cantidad.toString(), // UNIDADES
         `$${precioUSD}`, // PRECIO UNITARIO
         `$${totalUSD}` // TOTAL
@@ -241,6 +235,7 @@ export const generateProformaPDF = async (cotizacionId) => {
       head: [[
         '# DE CAJA / BOX #',
         'POSICIÓN ARANCELARIA\nHTS CODE',
+        'CÓDIGO\nPROPIO',
         'CÓDIGO\nCLIENTE',
         'DESCRIPCIÓN / DESCRIPTION',
         'UNIDADES O\nCANTIDAD /\nUNITS OR\nPACKAGES',
@@ -262,13 +257,14 @@ export const generateProformaPDF = async (cotizacionId) => {
         valign: 'middle'
       },
       columnStyles: {
-        0: { halign: 'center', cellWidth: 15 },
-        1: { halign: 'center', cellWidth: 20 },
-        2: { halign: 'center', cellWidth: 20 },
-        3: { halign: 'left', cellWidth: 50, overflow: 'linebreak' },
-        4: { halign: 'center', cellWidth: 18 },
-        5: { halign: 'right', cellWidth: 22 },
-        6: { halign: 'right', cellWidth: 22 }
+        0: { halign: 'center', cellWidth: 12 },
+        1: { halign: 'center', cellWidth: 18 },
+        2: { halign: 'center', cellWidth: 18 },
+        3: { halign: 'center', cellWidth: 18 },
+        4: { halign: 'left', cellWidth: 45, overflow: 'linebreak' },
+        5: { halign: 'center', cellWidth: 16 },
+        6: { halign: 'right', cellWidth: 20 },
+        7: { halign: 'right', cellWidth: 20 }
       }
     })
 
