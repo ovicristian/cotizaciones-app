@@ -11,6 +11,10 @@ export const generateProformaPDF = async (cotizacionId) => {
     // Obtener configuración de la empresa
     const { data: { user } } = await supabase.auth.getUser()
     
+    if (!user) {
+      throw new Error('Usuario no autenticado')
+    }
+    
     const { data: empresaConfig, error: empresaError } = await supabase
       .from('empresa_config')
       .select('*')
@@ -31,6 +35,7 @@ export const generateProformaPDF = async (cotizacionId) => {
       .single()
 
     if (cotError) throw cotError
+    if (!cotizacion) throw new Error('Cotización no encontrada')
 
     // Obtener referencias de la cotización
     const { data: refs, error: refsError } = await supabase
@@ -42,6 +47,7 @@ export const generateProformaPDF = async (cotizacionId) => {
       .eq('cotizacion_id', cotizacionId)
 
     if (refsError) throw refsError
+    if (!refs) throw new Error('Referencias no encontradas')
 
     // Ordenar referencias por número de caja
     const sortedRefs = refs.sort((a, b) => {
@@ -207,21 +213,16 @@ export const generateProformaPDF = async (cotizacionId) => {
       const precioUSD = (precioCOP / cotizacion.tasa_cambio).toFixed(2)
       const totalUSD = (precioUSD * ref.cantidad).toFixed(2)
       
-      // Build description: nombre - descripcion (sin código propio)
-      const nombre = referencia?.nombre || ''
-      const descripcionRef = referencia?.descripcion || ''
+      // Debug: verificar que el código venga correctamente
+      console.log('Referencia nombre:', referencia?.nombre, 'codigo_cliente:', ref.codigo_cliente)
       
-      let descripcionCompleta = ''
-      if (nombre && descripcionRef) {
-        descripcionCompleta = `${nombre} - ${descripcionRef}`
-      } else {
-        descripcionCompleta = nombre || descripcionRef || 'Sin descripción'
-      }
+      // La descripción es solo el campo descripcion de la referencia
+      const descripcionCompleta = referencia?.descripcion || 'Sin descripción'
       
       return [
         ref.numero_caja || '', // # DE CAJAS
         referencia?.codigo_arancelario || '', // HTS CODE
-        referencia?.codigo || '', // CÓDIGO PROPIO
+        referencia?.nombre || '', // CÓDIGO (nombre de la referencia)
         ref.codigo_cliente || '', // CÓDIGO CLIENTE
         descripcionCompleta, // DESCRIPCIÓN
         ref.cantidad.toString(), // UNIDADES
@@ -235,7 +236,7 @@ export const generateProformaPDF = async (cotizacionId) => {
       head: [[
         '# DE CAJA / BOX #',
         'POSICIÓN ARANCELARIA\nHTS CODE',
-        'CÓDIGO\nPROPIO',
+        'CÓDIGO',
         'CÓDIGO\nCLIENTE',
         'DESCRIPCIÓN / DESCRIPTION',
         'UNIDADES O\nCANTIDAD /\nUNITS OR\nPACKAGES',
