@@ -228,6 +228,7 @@ export const generateProformaPDF = async (cotizacionId) => {
       return [
         ref.numero_caja || '', // # DE CAJAS
         referencia?.codigo_arancelario || '', // HTS CODE
+        ref.codigo_cliente || '', // CÓDIGO CLIENTE
         descripcionCompleta, // DESCRIPCIÓN COMPLETA
         ref.cantidad.toString(), // UNIDADES
         `$${precioUSD}`, // PRECIO UNITARIO
@@ -240,6 +241,7 @@ export const generateProformaPDF = async (cotizacionId) => {
       head: [[
         '# DE CAJA / BOX #',
         'POSICIÓN ARANCELARIA\nHTS CODE',
+        'CÓDIGO\nCLIENTE',
         'DESCRIPCIÓN / DESCRIPTION',
         'UNIDADES O\nCANTIDAD /\nUNITS OR\nPACKAGES',
         'PRECIO\nUNITARIO\nPRICE\n(EACH/USD)',
@@ -260,12 +262,13 @@ export const generateProformaPDF = async (cotizacionId) => {
         valign: 'middle'
       },
       columnStyles: {
-        0: { halign: 'center', cellWidth: 20 },
-        1: { halign: 'center', cellWidth: 24 },
-        2: { halign: 'left', cellWidth: 60, overflow: 'linebreak' },
-        3: { halign: 'center', cellWidth: 20 },
-        4: { halign: 'right', cellWidth: 24 },
-        5: { halign: 'right', cellWidth: 24 }
+        0: { halign: 'center', cellWidth: 15 },
+        1: { halign: 'center', cellWidth: 20 },
+        2: { halign: 'center', cellWidth: 20 },
+        3: { halign: 'left', cellWidth: 50, overflow: 'linebreak' },
+        4: { halign: 'center', cellWidth: 18 },
+        5: { halign: 'right', cellWidth: 22 },
+        6: { halign: 'right', cellWidth: 22 }
       }
     })
 

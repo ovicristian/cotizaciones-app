@@ -86,7 +86,8 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
         referencia_id: ref.referencia_id,
         cantidad: ref.cantidad,
         precio_modificado_cop: ref.precio_modificado_cop || '',
-        numero_caja: ref.numero_caja || ''
+        numero_caja: ref.numero_caja || '',
+        codigo_cliente: ref.codigo_cliente || ''
       })))
     }
     setLoadingRefs(false)
@@ -101,7 +102,7 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
   }
 
   const handleAddReferencia = () => {
-    setSelectedRefs([...selectedRefs, { referencia_id: '', cantidad: 1, precio_modificado_cop: '', numero_caja: '' }])
+    setSelectedRefs([...selectedRefs, { referencia_id: '', cantidad: 1, precio_modificado_cop: '', numero_caja: '', codigo_cliente: '' }])
   }
 
   const handleRemoveReferencia = async (index) => {
@@ -285,7 +286,8 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
           referencia_id: ref.referencia_id,
           cantidad: parseInt(ref.cantidad),
           precio_modificado_cop: ref.precio_modificado_cop ? parseFloat(ref.precio_modificado_cop) : null,
-          numero_caja: ref.numero_caja ? parseInt(ref.numero_caja) : null
+          numero_caja: ref.numero_caja ? parseInt(ref.numero_caja) : null,
+          codigo_cliente: ref.codigo_cliente || null
         }
 
         if (ref.id) {
@@ -619,7 +621,7 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
                     <div key={index} className="border rounded-lg p-4 bg-gray-50">
                       <div className="grid grid-cols-12 gap-3 items-end">
                         {/* Referencia */}
-                        <div className="col-span-4">
+                        <div className="col-span-3">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Referencia
                           </label>
@@ -641,10 +643,24 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
                           />
                         </div>
 
-                        {/* Cantidad */}
+                        {/* Código Cliente */}
                         <div className="col-span-2">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Cantidad
+                            Código Cliente
+                          </label>
+                          <input
+                            type="text"
+                            value={ref.codigo_cliente || ''}
+                            onChange={(e) => handleReferenciaChange(index, 'codigo_cliente', e.target.value)}
+                            placeholder="Código del cliente"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          />
+                        </div>
+
+                        {/* Cantidad */}
+                        <div className="col-span-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Cant.
                           </label>
                           <input
                             type="number"

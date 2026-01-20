@@ -57,10 +57,11 @@ export const generateProformaExcel = async (cotizacionId) => {
     worksheet.columns = [
       { width: 12 }, // A - # Caja
       { width: 15 }, // B - HTS Code
-      { width: 50 }, // C - Descripción
-      { width: 12 }, // D - Cantidad
-      { width: 15 }, // E - Precio USD
-      { width: 15 }  // F - Total USD
+      { width: 18 }, // C - Código Cliente
+      { width: 45 }, // D - Descripción
+      { width: 12 }, // E - Cantidad
+      { width: 15 }, // F - Precio USD
+      { width: 15 }  // G - Total USD
     ]
 
     // Cargar y agregar logo
@@ -85,7 +86,7 @@ export const generateProformaExcel = async (cotizacionId) => {
     let currentRow = 4 // Empezar después del logo
 
     // TÍTULO
-    worksheet.mergeCells(`A${currentRow}:F${currentRow}`)
+    worksheet.mergeCells(`A${currentRow}:G${currentRow}`)
     const titleCell = worksheet.getCell(`A${currentRow}`)
     titleCell.value = 'PROFORMA'
     titleCell.font = { size: 18, bold: true, name: 'Arial' }
@@ -240,13 +241,14 @@ export const generateProformaExcel = async (cotizacionId) => {
     const productHeaderRow = currentRow
     worksheet.getCell(`A${currentRow}`).value = '# CAJA'
     worksheet.getCell(`B${currentRow}`).value = 'HTS CODE'
-    worksheet.getCell(`C${currentRow}`).value = 'DESCRIPCIÓN'
-    worksheet.getCell(`D${currentRow}`).value = 'CANTIDAD'
-    worksheet.getCell(`E${currentRow}`).value = 'PRECIO USD'
-    worksheet.getCell(`F${currentRow}`).value = 'TOTAL USD'
+    worksheet.getCell(`C${currentRow}`).value = 'CÓDIGO CLIENTE'
+    worksheet.getCell(`D${currentRow}`).value = 'DESCRIPCIÓN'
+    worksheet.getCell(`E${currentRow}`).value = 'CANTIDAD'
+    worksheet.getCell(`F${currentRow}`).value = 'PRECIO USD'
+    worksheet.getCell(`G${currentRow}`).value = 'TOTAL USD'
     
     // Aplicar estilo al encabezado de productos
-    for (let col = 1; col <= 6; col++) {
+    for (let col = 1; col <= 7; col++) {
       const cell = worksheet.getCell(currentRow, col)
       cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, name: 'Arial' }
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } }
@@ -289,17 +291,18 @@ export const generateProformaExcel = async (cotizacionId) => {
 
       worksheet.getCell(`A${currentRow}`).value = ref.numero_caja || ''
       worksheet.getCell(`B${currentRow}`).value = referencia?.codigo_arancelario || ''
-      worksheet.getCell(`C${currentRow}`).value = descripcionCompleta
-      worksheet.getCell(`D${currentRow}`).value = ref.cantidad
-      worksheet.getCell(`E${currentRow}`).value = precioUSD
-      worksheet.getCell(`F${currentRow}`).value = totalUSD
+      worksheet.getCell(`C${currentRow}`).value = ref.codigo_cliente || ''
+      worksheet.getCell(`D${currentRow}`).value = descripcionCompleta
+      worksheet.getCell(`E${currentRow}`).value = ref.cantidad
+      worksheet.getCell(`F${currentRow}`).value = precioUSD
+      worksheet.getCell(`G${currentRow}`).value = totalUSD
       
       // Formatear como moneda
-      worksheet.getCell(`E${currentRow}`).numFmt = '$#,##0.00'
       worksheet.getCell(`F${currentRow}`).numFmt = '$#,##0.00'
+      worksheet.getCell(`G${currentRow}`).numFmt = '$#,##0.00'
       
       // Aplicar bordes
-      for (let col = 1; col <= 6; col++) {
+      for (let col = 1; col <= 7; col++) {
         const cell = worksheet.getCell(currentRow, col)
         cell.font = { name: 'Arial' }
         cell.border = {
@@ -308,7 +311,7 @@ export const generateProformaExcel = async (cotizacionId) => {
           bottom: { style: 'thin' },
           right: { style: 'thin' }
         }
-        if (col === 3) {
+        if (col === 4) {
           cell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true }
         } else {
           cell.alignment = { horizontal: 'center', vertical: 'middle' }
@@ -321,29 +324,29 @@ export const generateProformaExcel = async (cotizacionId) => {
     currentRow += 1
 
     // TOTALES
-    worksheet.getCell(`E${currentRow}`).value = 'SUBTOTAL USD:'
-    worksheet.getCell(`E${currentRow}`).font = { bold: true, name: 'Arial' }
-    worksheet.getCell(`E${currentRow}`).alignment = { horizontal: 'right' }
-    worksheet.getCell(`F${currentRow}`).value = subtotal
-    worksheet.getCell(`F${currentRow}`).numFmt = '$#,##0.00'
+    worksheet.getCell(`F${currentRow}`).value = 'SUBTOTAL USD:'
     worksheet.getCell(`F${currentRow}`).font = { bold: true, name: 'Arial' }
+    worksheet.getCell(`F${currentRow}`).alignment = { horizontal: 'right' }
+    worksheet.getCell(`G${currentRow}`).value = subtotal
+    worksheet.getCell(`G${currentRow}`).numFmt = '$#,##0.00'
+    worksheet.getCell(`G${currentRow}`).font = { bold: true, name: 'Arial' }
     currentRow++
 
-    worksheet.getCell(`E${currentRow}`).value = 'DESCUENTO:'
-    worksheet.getCell(`E${currentRow}`).font = { bold: true, name: 'Arial' }
-    worksheet.getCell(`E${currentRow}`).alignment = { horizontal: 'right' }
-    worksheet.getCell(`F${currentRow}`).value = 0
-    worksheet.getCell(`F${currentRow}`).numFmt = '$#,##0.00'
-    worksheet.getCell(`F${currentRow}`).font = { name: 'Arial' }
+    worksheet.getCell(`F${currentRow}`).value = 'DESCUENTO:'
+    worksheet.getCell(`F${currentRow}`).font = { bold: true, name: 'Arial' }
+    worksheet.getCell(`F${currentRow}`).alignment = { horizontal: 'right' }
+    worksheet.getCell(`G${currentRow}`).value = 0
+    worksheet.getCell(`G${currentRow}`).numFmt = '$#,##0.00'
+    worksheet.getCell(`G${currentRow}`).font = { name: 'Arial' }
     currentRow++
 
-    worksheet.getCell(`E${currentRow}`).value = 'TOTAL USD:'
-    worksheet.getCell(`E${currentRow}`).font = { bold: true, size: 12, name: 'Arial' }
-    worksheet.getCell(`E${currentRow}`).alignment = { horizontal: 'right' }
-    worksheet.getCell(`F${currentRow}`).value = subtotal
-    worksheet.getCell(`F${currentRow}`).numFmt = '$#,##0.00'
+    worksheet.getCell(`F${currentRow}`).value = 'TOTAL USD:'
     worksheet.getCell(`F${currentRow}`).font = { bold: true, size: 12, name: 'Arial' }
-    worksheet.getCell(`F${currentRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFE599' } }
+    worksheet.getCell(`F${currentRow}`).alignment = { horizontal: 'right' }
+    worksheet.getCell(`G${currentRow}`).value = subtotal
+    worksheet.getCell(`G${currentRow}`).numFmt = '$#,##0.00'
+    worksheet.getCell(`G${currentRow}`).font = { bold: true, size: 12, name: 'Arial' }
+    worksheet.getCell(`G${currentRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFE599' } }
     currentRow += 2
 
     // OBSERVACIONES

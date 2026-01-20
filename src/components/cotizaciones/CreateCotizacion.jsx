@@ -113,7 +113,7 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
   }
 
   const handleAddReferencia = () => {
-    setSelectedRefs([...selectedRefs, { referencia_id: '', cantidad: 1, precio_modificado_cop: '' }])
+    setSelectedRefs([...selectedRefs, { referencia_id: '', cantidad: 1, precio_modificado_cop: '', codigo_cliente: '' }])
   }
 
   const handleRemoveReferencia = (index) => {
@@ -175,7 +175,8 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
           cotizacion_id: cotizacion.id,
           referencia_id: ref.referencia_id,
           cantidad: parseInt(ref.cantidad),
-          precio_modificado_cop: ref.precio_modificado_cop ? parseFloat(ref.precio_modificado_cop) : null
+          precio_modificado_cop: ref.precio_modificado_cop ? parseFloat(ref.precio_modificado_cop) : null,
+          codigo_cliente: ref.codigo_cliente || null
         }))
 
         const { error: refsError } = await supabase
@@ -458,7 +459,7 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
                     <div key={index} className="border rounded-lg p-4 bg-gray-50">
                       <div className="grid grid-cols-12 gap-3 items-end">
                         {/* Referencia */}
-                        <div className="col-span-5">
+                        <div className="col-span-4">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Referencia
                           </label>
@@ -480,10 +481,24 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
                           />
                         </div>
 
-                        {/* Cantidad */}
+                        {/* Código Cliente */}
                         <div className="col-span-2">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Cantidad
+                            Código Cliente
+                          </label>
+                          <input
+                            type="text"
+                            value={ref.codigo_cliente || ''}
+                            onChange={(e) => handleReferenciaChange(index, 'codigo_cliente', e.target.value)}
+                            placeholder="Código del cliente"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          />
+                        </div>
+
+                        {/* Cantidad */}
+                        <div className="col-span-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Cant.
                           </label>
                           <input
                             type="number"

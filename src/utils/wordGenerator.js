@@ -194,6 +194,7 @@ export const generateProformaWord = async (cotizacionId) => {
                 children: [
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '# CAJA', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'HTS CODE', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'CÓDIGO CLIENTE', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'DESCRIPCIÓN', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'CANTIDAD', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'PRECIO USD', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
@@ -228,6 +229,7 @@ export const generateProformaWord = async (cotizacionId) => {
                   children: [
                     new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: (ref.numero_caja || '').toString(), font: 'Arial' })] })] }),
                     new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: referencia?.codigo_arancelario || '', font: 'Arial' })] })] }),
+                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ref.codigo_cliente || '', font: 'Arial' })] })] }),
                     new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: descripcionCompleta, font: 'Arial' })] })] }),
                     new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ref.cantidad.toString(), font: 'Arial' })] })] }),
                     new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `$${precioUSD}`, font: 'Arial' })] })] }),
