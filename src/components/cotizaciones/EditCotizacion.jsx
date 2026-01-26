@@ -87,6 +87,7 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
         cantidad: ref.cantidad,
         precio_modificado_cop: ref.precio_modificado_cop || '',
         numero_caja: ref.numero_caja || '',
+        numero_cajas: ref.numero_cajas || 1,
         codigo_cliente: ref.codigo_cliente || ''
       })))
     }
@@ -102,7 +103,7 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
   }
 
   const handleAddReferencia = () => {
-    setSelectedRefs([...selectedRefs, { referencia_id: '', cantidad: 1, precio_modificado_cop: '', numero_caja: '', codigo_cliente: '' }])
+    setSelectedRefs([...selectedRefs, { referencia_id: '', cantidad: 1, precio_modificado_cop: '', numero_caja: '', numero_cajas: 1, codigo_cliente: '' }])
   }
 
   const handleRemoveReferencia = async (index) => {
@@ -136,9 +137,9 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
   }
 
   const calcularCajasAutomaticamente = () => {
-    const nuevasReferencias = []
+    const referenciasActualizadas = []
     let numeroCajaActual = 1
-    const cajasPorFamilia = {} // { familia: { capacidad, cantidad_actual, numero_caja } }
+    const cajasPorFamilia = {} // { familia: { capacidad, cantidad_actual, numero_caja_inicio } }
 
     selectedRefs.forEach(ref => {
       const referencia = referencias.find(r => r.id === ref.referencia_id)
@@ -150,14 +151,18 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
 
       // Si no tiene capacidad definida, asignar todo a una caja individual
       if (capacidadCaja === 0 || !capacidadCaja) {
-        nuevasReferencias.push({
+        referenciasActualizadas.push({
           ...ref,
-          numero_caja: numeroCajaActual
+          numero_caja: numeroCajaActual,
+          numero_cajas: 1
         })
         numeroCajaActual++
         return
       }
 
+      // Calcular cuántas cajas necesita esta referencia
+      const cajasNecesarias = Math.ceil(cantidad / capacidadCaja)
+      
       // Usar la familia como clave, si no tiene familia usar el ID de la referencia
       const claveAgrupacion = familia || `ref_${referencia.id}`
 
@@ -166,58 +171,67 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
         cajasPorFamilia[claveAgrupacion] = {
           capacidad: capacidadCaja,
           cantidad_actual: 0,
-          numero_caja: numeroCajaActual
+          numero_caja_inicio: numeroCajaActual
         }
-        numeroCajaActual++
       }
 
       const familiaInfo = cajasPorFamilia[claveAgrupacion]
+      const numeroCajaInicio = numeroCajaActual
       
-      // Distribuir la cantidad en cajas, creando múltiples registros si es necesario
+      // Calcular cuántas cajas ocupa considerando el espacio disponible en la caja actual
       let cantidadRestante = cantidad
+      let cajasOcupadas = 0
       
-      while (cantidadRestante > 0) {
+      // Si hay espacio en la caja actual de la familia
+      if (familiaInfo.cantidad_actual > 0 && familiaInfo.cantidad_actual < familiaInfo.capacidad) {
         const espacioDisponible = familiaInfo.capacidad - familiaInfo.cantidad_actual
+        const cantidadEnPrimeraCaja = Math.min(cantidadRestante, espacioDisponible)
+        cantidadRestante -= cantidadEnPrimeraCaja
+        familiaInfo.cantidad_actual += cantidadEnPrimeraCaja
         
-        if (espacioDisponible > 0) {
-          // Cabe en la caja actual
-          const cantidadEnEstaCaja = Math.min(cantidadRestante, espacioDisponible)
-          
-          // Crear un nuevo registro para esta porción
-          nuevasReferencias.push({
-            ...ref,
-            cantidad: cantidadEnEstaCaja,
-            numero_caja: familiaInfo.numero_caja
-          })
-          
-          familiaInfo.cantidad_actual += cantidadEnEstaCaja
-          cantidadRestante -= cantidadEnEstaCaja
-          
-          // Si llenamos la caja, crear una nueva para la siguiente iteración
-          if (familiaInfo.cantidad_actual >= familiaInfo.capacidad) {
-            familiaInfo.numero_caja = numeroCajaActual
-            numeroCajaActual++
-            familiaInfo.cantidad_actual = 0
-          }
-        } else {
-          // Necesitamos una nueva caja
-          familiaInfo.numero_caja = numeroCajaActual
+        if (familiaInfo.cantidad_actual >= familiaInfo.capacidad) {
+          numeroCajaActual++
+          familiaInfo.cantidad_actual = 0
+          cajasOcupadas++
+        }
+      }
+      
+      // Calcular cajas adicionales necesarias
+      if (cantidadRestante > 0) {
+        const cajasAdicionales = Math.ceil(cantidadRestante / capacidadCaja)
+        cajasOcupadas += cajasAdicionales
+        numeroCajaActual += cajasAdicionales
+        
+        // Actualizar cantidad actual en la última caja
+        familiaInfo.cantidad_actual = cantidadRestante % capacidadCaja
+        if (familiaInfo.cantidad_actual === 0 && cajasAdicionales > 0) {
+          familiaInfo.cantidad_actual = capacidadCaja
+        }
+      }
+      
+      // Si no ocupó ninguna caja adicional, cuenta la caja actual
+      if (cajasOcupadas === 0) {
+        cajasOcupadas = 1
+        familiaInfo.cantidad_actual += cantidad
+        if (familiaInfo.cantidad_actual >= familiaInfo.capacidad) {
           numeroCajaActual++
           familiaInfo.cantidad_actual = 0
         }
       }
+
+      referenciasActualizadas.push({
+        ...ref,
+        numero_caja: numeroCajaInicio,
+        numero_cajas: cajasOcupadas
+      })
     })
 
-    setSelectedRefs(nuevasReferencias)
+    setSelectedRefs(referenciasActualizadas)
     
-    // Calcular automáticamente las unidades de carga después de asignar las cajas
-    const cajasUnicas = new Set(
-      nuevasReferencias
-        .filter(ref => ref.numero_caja && ref.numero_caja !== '')
-        .map(ref => parseInt(ref.numero_caja))
-    )
-    
-    const totalCajas = cajasUnicas.size
+    // Calcular automáticamente las unidades de carga (total de cajas)
+    const totalCajas = referenciasActualizadas.reduce((sum, ref) => {
+      return sum + (parseInt(ref.numero_cajas) || 0)
+    }, 0)
     
     if (totalCajas > 0) {
       setFormData(prev => ({
@@ -316,6 +330,7 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
           cantidad: parseInt(ref.cantidad),
           precio_modificado_cop: ref.precio_modificado_cop ? parseFloat(ref.precio_modificado_cop) : null,
           numero_caja: ref.numero_caja ? parseInt(ref.numero_caja) : null,
+          numero_cajas: ref.numero_cajas ? parseInt(ref.numero_cajas) : 1,
           codigo_cliente: ref.codigo_cliente || null
         }
 
@@ -704,7 +719,7 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
                         {/* # Caja */}
                         <div className="col-span-1">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            # Caja
+                            # Caja Inicial
                           </label>
                           <input
                             type="number"
@@ -713,6 +728,23 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
                             min="1"
                             placeholder="-"
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          />
+                        </div>
+
+                        {/* Número de Cajas */}
+                        <div className="col-span-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            # Cajas
+                          </label>
+                          <input
+                            type="number"
+                            value={ref.numero_cajas || 1}
+                            onChange={(e) => handleReferenciaChange(index, 'numero_cajas', e.target.value)}
+                            min="1"
+                            placeholder="1"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-gray-50"
+                            readOnly
+                            title="Se calcula automáticamente"
                           />
                         </div>
 
