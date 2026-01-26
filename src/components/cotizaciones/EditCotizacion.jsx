@@ -663,9 +663,10 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
 
                   return (
                     <div key={index} className="border rounded-lg p-4 bg-gray-50">
-                      <div className="grid grid-cols-12 gap-3 items-end">
+                      {/* Primera fila */}
+                      <div className="grid grid-cols-12 gap-3 items-end mb-3">
                         {/* Referencia */}
-                        <div className="col-span-3">
+                        <div className="col-span-5">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Referencia
                           </label>
@@ -688,7 +689,7 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
                         </div>
 
                         {/* Código Cliente */}
-                        <div className="col-span-2">
+                        <div className="col-span-3">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Código Cliente
                           </label>
@@ -702,9 +703,9 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
                         </div>
 
                         {/* Cantidad */}
-                        <div className="col-span-1">
+                        <div className="col-span-2">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Cant.
+                            Cantidad
                           </label>
                           <input
                             type="number"
@@ -716,8 +717,23 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
                           />
                         </div>
 
-                        {/* # Caja */}
-                        <div className="col-span-1">
+                        {/* Eliminar */}
+                        <div className="col-span-2">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveReferencia(index)}
+                            className="w-full px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
+                          >
+                            <Trash2 size={16} />
+                            <span className="text-sm">Eliminar</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Segunda fila */}
+                      <div className="grid grid-cols-12 gap-3 items-end">
+                        {/* # Caja Inicial */}
+                        <div className="col-span-2">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             # Caja Inicial
                           </label>
@@ -732,7 +748,7 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
                         </div>
 
                         {/* Número de Cajas */}
-                        <div className="col-span-1">
+                        <div className="col-span-2">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             # Cajas
                           </label>
@@ -749,7 +765,7 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
                         </div>
 
                         {/* Precio Modificado */}
-                        <div className="col-span-2">
+                        <div className="col-span-3">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Precio COP
                           </label>
@@ -764,7 +780,7 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
                         </div>
 
                         {/* Precio USD */}
-                        <div className="col-span-2">
+                        <div className="col-span-3">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Precio USD
                           </label>
@@ -773,17 +789,8 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
                           </div>
                         </div>
 
-                        {/* Eliminar */}
-                        <div className="col-span-1">
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveReferencia(index)}
-                            className="text-red-600 hover:text-red-900 p-2"
-                            title="Eliminar"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
+                        {/* Espacio vacío para alineación */}
+                        <div className="col-span-2"></div>
                       </div>
                     </div>
                   )
