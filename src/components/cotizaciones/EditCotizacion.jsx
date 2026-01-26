@@ -206,6 +206,22 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
     })
 
     setSelectedRefs(nuevasReferencias)
+    
+    // Calcular automáticamente las unidades de carga después de asignar las cajas
+    const cajasUnicas = new Set(
+      nuevasReferencias
+        .filter(ref => ref.numero_caja && ref.numero_caja !== '')
+        .map(ref => parseInt(ref.numero_caja))
+    )
+    
+    const totalCajas = cajasUnicas.size
+    
+    if (totalCajas > 0) {
+      setFormData(prev => ({
+        ...prev,
+        unidades_carga: totalCajas.toString()
+      }))
+    }
   }
 
   const ordenarPorNumeroCaja = () => {
