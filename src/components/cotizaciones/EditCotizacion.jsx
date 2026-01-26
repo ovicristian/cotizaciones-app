@@ -136,11 +136,11 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
   }
 
   const calcularCajasAutomaticamente = () => {
-    const updated = [...selectedRefs]
+    const nuevasReferencias = []
     let numeroCajaActual = 1
     const cajasPorFamilia = {} // { familia: { capacidad, cantidad_actual, numero_caja } }
 
-    updated.forEach(ref => {
+    selectedRefs.forEach(ref => {
       const referencia = referencias.find(r => r.id === ref.referencia_id)
       if (!referencia) return
 
@@ -150,7 +150,10 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
 
       // Si no tiene familia o no tiene capacidad definida, asignar caja individual
       if (!familia || capacidadCaja === 0) {
-        ref.numero_caja = numeroCajaActual
+        nuevasReferencias.push({
+          ...ref,
+          numero_caja: numeroCajaActual
+        })
         numeroCajaActual++
         return
       }
@@ -167,7 +170,7 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
 
       const familiaInfo = cajasPorFamilia[familia]
       
-      // Distribuir la cantidad en cajas
+      // Distribuir la cantidad en cajas, creando múltiples registros si es necesario
       let cantidadRestante = cantidad
       
       while (cantidadRestante > 0) {
@@ -176,11 +179,18 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
         if (espacioDisponible > 0) {
           // Cabe en la caja actual
           const cantidadEnEstaCaja = Math.min(cantidadRestante, espacioDisponible)
-          ref.numero_caja = familiaInfo.numero_caja
+          
+          // Crear un nuevo registro para esta porción
+          nuevasReferencias.push({
+            ...ref,
+            cantidad: cantidadEnEstaCaja,
+            numero_caja: familiaInfo.numero_caja
+          })
+          
           familiaInfo.cantidad_actual += cantidadEnEstaCaja
           cantidadRestante -= cantidadEnEstaCaja
           
-          // Si llenamos la caja, crear una nueva
+          // Si llenamos la caja, crear una nueva para la siguiente iteración
           if (familiaInfo.cantidad_actual >= familiaInfo.capacidad) {
             familiaInfo.numero_caja = numeroCajaActual
             numeroCajaActual++
@@ -195,7 +205,7 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
       }
     })
 
-    setSelectedRefs(updated)
+    setSelectedRefs(nuevasReferencias)
   }
 
   const ordenarPorNumeroCaja = () => {
