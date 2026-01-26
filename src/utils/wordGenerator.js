@@ -49,11 +49,17 @@ export const generateProformaWord = async (cotizacionId) => {
 
     const proformaNum = cotizacion.numero_cotizacion || `${cotizacion.id.toString().padStart(3, '0')}`
 
-    // Calcular subtotal
+    // Calcular costo de logística por unidad
+    const costoLogisticaUSD = parseFloat(cotizacion.costo_logistica_usd) || 0
+    const totalUnidades = sortedRefs.reduce((sum, ref) => sum + ref.cantidad, 0)
+    const costoLogisticaPorUnidad = totalUnidades > 0 ? costoLogisticaUSD / totalUnidades : 0
+
+    // Calcular subtotal con precio FOB
     const subtotal = sortedRefs.reduce((sum, ref) => {
       const precio = ref.precio_modificado_cop || ref.referencias.precio_cop || 0
-      const precioUSD = precio / cotizacion.tasa_cambio
-      return sum + (precioUSD * ref.cantidad)
+      const precioBaseUSD = precio / cotizacion.tasa_cambio
+      const precioFOB = precioBaseUSD + costoLogisticaPorUnidad
+      return sum + (precioFOB * ref.cantidad)
     }, 0)
 
     // Cargar logo como base64
@@ -192,20 +198,26 @@ export const generateProformaWord = async (cotizacionId) => {
               // Header
               new TableRow({
                 children: [
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '# CAJA', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '# CAJA INICIAL', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '# CAJAS', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'HTS CODE', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'DESCRIPCIÓN', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'CANTIDAD', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'PRECIO USD', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'PRECIO FOB USD', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'TOTAL USD', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER })
                 ]
               }),
               // Datos
               ...sortedRefs.map(ref => {
+                const costoLogisticaUSD = parseFloat(cotizacion.costo_logistica_usd) || 0
+                const totalUnidades = sortedRefs.reduce((sum, r) => sum + r.cantidad, 0)
+                const costoLogisticaPorUnidad = totalUnidades > 0 ? costoLogisticaUSD / totalUnidades : 0
+                
                 const referencia = ref.referencias
                 const precioCOP = ref.precio_modificado_cop || referencia.precio_cop || 0
-                const precioUSD = (precioCOP / cotizacion.tasa_cambio).toFixed(2)
-                const totalUSD = (precioUSD * ref.cantidad).toFixed(2)
+                const precioBaseUSD = precioCOP / cotizacion.tasa_cambio
+                const precioFOB = (precioBaseUSD + costoLogisticaPorUnidad).toFixed(2)
+                const totalUSD = (precioFOB * ref.cantidad).toFixed(2)
                 
                 const codigo = referencia?.codigo || ''
                 const nombre = referencia?.nombre || ''
@@ -227,10 +239,11 @@ export const generateProformaWord = async (cotizacionId) => {
                 return new TableRow({
                   children: [
                     new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: (ref.numero_caja || '').toString(), font: 'Arial' })] })] }),
+                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: (ref.cantidad_cajas || '').toString(), font: 'Arial' })] })] }),
                     new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: referencia?.codigo_arancelario || '', font: 'Arial' })] })] }),
                     new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: descripcionCompleta, font: 'Arial' })] })] }),
                     new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ref.cantidad.toString(), font: 'Arial' })] })] }),
-                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `$${precioUSD}`, font: 'Arial' })] })] }),
+                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `$${precioFOB}`, font: 'Arial' })] })] }),
                     new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `$${totalUSD}`, font: 'Arial' })] })] })
                   ]
                 })

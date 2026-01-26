@@ -20,6 +20,7 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
     dimension_l: '',
     dimension_w: '',
     dimension_h: '',
+    costo_logistica_usd: '',
     observaciones: ''
   })
   const [selectedRefs, setSelectedRefs] = useState([])
@@ -161,6 +162,7 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
           dimension_l: formData.dimension_l ? parseFloat(formData.dimension_l) : null,
           dimension_w: formData.dimension_w ? parseFloat(formData.dimension_w) : null,
           dimension_h: formData.dimension_h ? parseFloat(formData.dimension_h) : null,
+          costo_logistica_usd: formData.costo_logistica_usd ? parseFloat(formData.costo_logistica_usd) : 0,
           observaciones: formData.observaciones || null,
           user_id: user.id
         }])
@@ -295,6 +297,23 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+            </div>
+            
+            {/* Costo de Logística */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Costo de Logística (USD)
+              </label>
+              <input
+                type="number"
+                name="costo_logistica_usd"
+                value={formData.costo_logistica_usd}
+                onChange={handleChange}
+                step="0.01"
+                placeholder="0.00"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <small className="text-gray-500">Costo que se distribuirá entre todas las unidades (precio FOB)</small>
             </div>
           </div>
 

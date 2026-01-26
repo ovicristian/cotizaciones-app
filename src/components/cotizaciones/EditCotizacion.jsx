@@ -20,6 +20,7 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
     dimension_l: cotizacion.dimension_l || '',
     dimension_w: cotizacion.dimension_w || '',
     dimension_h: cotizacion.dimension_h || '',
+    costo_logistica_usd: cotizacion.costo_logistica_usd || '',
     observaciones: cotizacion.observaciones || ''
   })
   const [selectedRefs, setSelectedRefs] = useState([])
@@ -32,6 +33,22 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
     fetchReferencias()
     fetchCotizacionReferencias()
   }, [])
+
+  // Recalcular unidades de carga cuando cambian las referencias
+  useEffect(() => {
+    if (selectedRefs.length > 0) {
+      const totalCajas = selectedRefs.reduce((sum, ref) => {
+        return sum + (parseInt(ref.cantidad_cajas) || 0)
+      }, 0)
+      
+      if (totalCajas > 0) {
+        setFormData(prev => ({
+          ...prev,
+          unidades_carga: totalCajas
+        }))
+      }
+    }
+  }, [selectedRefs])
 
   const fetchClientes = async () => {
     const { data } = await supabase
@@ -81,13 +98,33 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
       .eq('cotizacion_id', cotizacion.id)
     
     if (data) {
-      setSelectedRefs(data.map(ref => ({
-        id: ref.id,
-        referencia_id: ref.referencia_id,
-        cantidad: ref.cantidad,
-        precio_modificado_cop: ref.precio_modificado_cop || '',
-        numero_caja: ref.numero_caja || ''
-      })))
+      // Esperar a que las referencias estén cargadas para calcular
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      const refsConCalculo = data.map(ref => {
+        let cantidadCajas = ref.cantidad_cajas || ''
+        
+        // Si no hay cantidad de cajas guardada, calcularla
+        if (!cantidadCajas) {
+          const referencia = referencias.find(r => r.id === ref.referencia_id)
+          if (referencia && referencia.cantidad_minima_caja && ref.cantidad) {
+            const cantidad = parseInt(ref.cantidad) || 0
+            const capacidadCaja = parseInt(referencia.cantidad_minima_caja) || 1
+            cantidadCajas = Math.ceil(cantidad / capacidadCaja)
+          }
+        }
+        
+        return {
+          id: ref.id,
+          referencia_id: ref.referencia_id,
+          cantidad: ref.cantidad,
+          precio_modificado_cop: ref.precio_modificado_cop || '',
+          numero_caja: ref.numero_caja || '',
+          cantidad_cajas: cantidadCajas
+        }
+      })
+      
+      setSelectedRefs(refsConCalculo)
     }
     setLoadingRefs(false)
   }
@@ -101,7 +138,7 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
   }
 
   const handleAddReferencia = () => {
-    setSelectedRefs([...selectedRefs, { referencia_id: '', cantidad: 1, precio_modificado_cop: '', numero_caja: '' }])
+    setSelectedRefs([...selectedRefs, { referencia_id: '', cantidad: 1, precio_modificado_cop: '', numero_caja: '', cantidad_cajas: '' }])
   }
 
   const handleRemoveReferencia = async (index) => {
@@ -126,6 +163,15 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
   const handleReferenciaChange = (index, field, value) => {
     const updated = [...selectedRefs]
     updated[index][field] = value
+    
+    // Calcular # cajas automáticamente
+    const referencia = referencias.find(r => r.id === updated[index].referencia_id)
+    if (referencia && referencia.cantidad_minima_caja && updated[index].cantidad) {
+      const cantidad = parseInt(updated[index].cantidad) || 0
+      const capacidadCaja = parseInt(referencia.cantidad_minima_caja) || 1
+      updated[index].cantidad_cajas = Math.ceil(cantidad / capacidadCaja)
+    }
+    
     setSelectedRefs(updated)
   }
 
@@ -146,6 +192,13 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
       const familia = referencia.familia
       const cantidad = parseInt(ref.cantidad) || 0
       const capacidadCaja = parseInt(referencia.cantidad_minima_caja) || 0
+
+      // Calcular cantidad de cajas necesarias
+      if (capacidadCaja > 0 && cantidad > 0) {
+        ref.cantidad_cajas = Math.ceil(cantidad / capacidadCaja)
+      } else {
+        ref.cantidad_cajas = ''
+      }
 
       // Si no tiene familia o no tiene capacidad definida, asignar caja individual
       if (!familia || capacidadCaja === 0) {
@@ -195,6 +248,20 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
     })
 
     setSelectedRefs(updated)
+    
+    // Actualizar unidades de carga automáticamente
+    setTimeout(() => {
+      const totalCajas = updated.reduce((sum, ref) => {
+        return sum + (parseInt(ref.cantidad_cajas) || 0)
+      }, 0)
+      
+      if (totalCajas > 0) {
+        setFormData(prev => ({
+          ...prev,
+          unidades_carga: totalCajas
+        }))
+      }
+    }, 0)
   }
 
   const ordenarPorNumeroCaja = () => {
@@ -207,21 +274,19 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
   }
 
   const calcularUnidadesCarga = () => {
-    // Obtener el número de cajas únicas
-    const cajasUnicas = new Set(
-      selectedRefs
-        .filter(ref => ref.numero_caja && ref.numero_caja !== '')
-        .map(ref => parseInt(ref.numero_caja))
-    )
+    // Sumar todas las cantidad_cajas de las referencias
+    const totalCajas = selectedRefs.reduce((sum, ref) => {
+      const cajas = parseInt(ref.cantidad_cajas) || 0
+      console.log('Ref cantidad_cajas:', ref.cantidad_cajas, 'Parsed:', cajas)
+      return sum + cajas
+    }, 0)
     
-    const totalCajas = cajasUnicas.size
+    console.log('Total cajas calculado:', totalCajas)
     
-    if (totalCajas > 0) {
-      setFormData(prev => ({
-        ...prev,
-        unidades_carga: totalCajas.toString()
-      }))
-    }
+    setFormData(prev => ({
+      ...prev,
+      unidades_carga: totalCajas
+    }))
   }
 
   const calcularPesoTotal = () => {
@@ -272,6 +337,7 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
           dimension_l: formData.dimension_l ? parseFloat(formData.dimension_l) : null,
           dimension_w: formData.dimension_w ? parseFloat(formData.dimension_w) : null,
           dimension_h: formData.dimension_h ? parseFloat(formData.dimension_h) : null,
+          costo_logistica_usd: formData.costo_logistica_usd ? parseFloat(formData.costo_logistica_usd) : 0,
           observaciones: formData.observaciones || null
         })
         .eq('id', cotizacion.id)
@@ -285,7 +351,8 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
           referencia_id: ref.referencia_id,
           cantidad: parseInt(ref.cantidad),
           precio_modificado_cop: ref.precio_modificado_cop ? parseFloat(ref.precio_modificado_cop) : null,
-          numero_caja: ref.numero_caja ? parseInt(ref.numero_caja) : null
+          numero_caja: ref.numero_caja ? parseInt(ref.numero_caja) : null,
+          cantidad_cajas: ref.cantidad_cajas ? parseInt(ref.cantidad_cajas) : null
         }
 
         if (ref.id) {
@@ -416,6 +483,23 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+            </div>
+            
+            {/* Costo de Logística */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Costo de Logística (USD)
+              </label>
+              <input
+                type="number"
+                name="costo_logistica_usd"
+                value={formData.costo_logistica_usd}
+                onChange={handleChange}
+                step="0.01"
+                placeholder="0.00"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <small className="text-gray-500">Costo que se distribuirá entre todas las unidades (precio FOB)</small>
             </div>
           </div>
 
@@ -609,6 +693,12 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
                   const referencia = referencias.find(r => r.id === ref.referencia_id)
                   const precioCOP = ref.precio_modificado_cop || referencia?.precio_cop || 0
                   const precioUSD = formData.tasa_cambio ? (precioCOP / parseFloat(formData.tasa_cambio)).toFixed(2) : 0
+                  
+                  // Calcular precio FOB
+                  const costoLogisticaUSD = parseFloat(formData.costo_logistica_usd) || 0
+                  const totalUnidades = selectedRefs.reduce((sum, r) => sum + parseInt(r.cantidad || 0), 0)
+                  const costoLogisticaPorUnidad = totalUnidades > 0 ? costoLogisticaUSD / totalUnidades : 0
+                  const precioFOB = formData.tasa_cambio ? (parseFloat(precioUSD) + costoLogisticaPorUnidad).toFixed(2) : 0
 
                   const referenciaOptions = referencias.map(r => ({
                     value: r.id,
@@ -617,9 +707,10 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
 
                   return (
                     <div key={index} className="border rounded-lg p-4 bg-gray-50">
-                      <div className="grid grid-cols-12 gap-3 items-end">
+                      {/* Primera fila */}
+                      <div className="grid grid-cols-12 gap-3 items-end mb-3">
                         {/* Referencia */}
-                        <div className="col-span-4">
+                        <div className="col-span-6">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Referencia
                           </label>
@@ -641,6 +732,19 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
                           />
                         </div>
 
+                        {/* Código Cliente */}
+                        <div className="col-span-3">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Código Cliente
+                          </label>
+                          <input
+                            type="text"
+                            value={referencia?.codigo_cliente || ''}
+                            disabled
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-sm text-gray-600"
+                          />
+                        </div>
+
                         {/* Cantidad */}
                         <div className="col-span-2">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -656,10 +760,25 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
                           />
                         </div>
 
-                        {/* # Caja */}
+                        {/* Eliminar */}
                         <div className="col-span-1">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveReferencia(index)}
+                            className="w-full bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm"
+                            title="Eliminar"
+                          >
+                            <Trash2 size={18} className="mx-auto" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Segunda fila */}
+                      <div className="grid grid-cols-12 gap-3 items-end">
+                        {/* # Caja Inicial */}
+                        <div className="col-span-2">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            # Caja
+                            # Caja Inicial
                           </label>
                           <input
                             type="number"
@@ -671,7 +790,17 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
                           />
                         </div>
 
-                        {/* Precio Modificado */}
+                        {/* # Cajas */}
+                        <div className="col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            # Cajas (Auto)
+                          </label>
+                          <div className="px-3 py-2 bg-blue-50 rounded-lg text-sm font-semibold text-blue-700">
+                            {ref.cantidad_cajas || '-'}
+                          </div>
+                        </div>
+
+                        {/* Precio COP */}
                         <div className="col-span-2">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Precio COP
@@ -696,17 +825,18 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
                           </div>
                         </div>
 
-                        {/* Eliminar */}
-                        <div className="col-span-1">
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveReferencia(index)}
-                            className="text-red-600 hover:text-red-900 p-2"
-                            title="Eliminar"
-                          >
-                            <Trash2 size={18} />
-                          </button>
+                        {/* Precio FOB */}
+                        <div className="col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Precio FOB
+                          </label>
+                          <div className="px-3 py-2 bg-blue-50 rounded-lg text-sm font-semibold text-blue-700">
+                            ${precioFOB}
+                          </div>
                         </div>
+
+                        {/* Espacio vacío para alinear con el botón eliminar */}
+                        <div className="col-span-2"></div>
                       </div>
                     </div>
                   )

@@ -201,11 +201,17 @@ export const generateProformaPDF = async (cotizacionId) => {
     // Products table
     y = doc.lastAutoTable.finalY + 5
     
+    // Calcular costo de logística por unidad
+    const costoLogisticaUSD = parseFloat(cotizacion.costo_logistica_usd) || 0
+    const totalUnidades = sortedRefs.reduce((sum, ref) => sum + ref.cantidad, 0)
+    const costoLogisticaPorUnidad = totalUnidades > 0 ? costoLogisticaUSD / totalUnidades : 0
+    
     const tableData = sortedRefs.map(ref => {
       const referencia = ref.referencias
       const precioCOP = ref.precio_modificado_cop || referencia.precio_cop || 0
-      const precioUSD = (precioCOP / cotizacion.tasa_cambio).toFixed(2)
-      const totalUSD = (precioUSD * ref.cantidad).toFixed(2)
+      const precioBaseUSD = precioCOP / cotizacion.tasa_cambio
+      const precioFOB = (precioBaseUSD + costoLogisticaPorUnidad).toFixed(2)
+      const totalUSD = (precioFOB * ref.cantidad).toFixed(2)
       
       // Build complete description: codigo - nombre - descripcion
       const codigo = referencia?.codigo || ''
@@ -226,11 +232,12 @@ export const generateProformaPDF = async (cotizacionId) => {
       }
       
       return [
-        ref.numero_caja || '', // # DE CAJAS
+        ref.numero_caja || '', // # CAJA INICIAL
+        ref.cantidad_cajas || '', // # CAJAS
         referencia?.codigo_arancelario || '', // HTS CODE
         descripcionCompleta, // DESCRIPCIÓN COMPLETA
         ref.cantidad.toString(), // UNIDADES
-        `$${precioUSD}`, // PRECIO UNITARIO
+        `$${precioFOB}`, // PRECIO FOB UNITARIO
         `$${totalUSD}` // TOTAL
       ]
     })
@@ -238,11 +245,12 @@ export const generateProformaPDF = async (cotizacionId) => {
     autoTable(doc, {
       startY: y,
       head: [[
-        '# DE CAJA / BOX #',
-        'POSICIÓN ARANCELARIA\nHTS CODE',
+        '# CAJA\nINICIAL',
+        '# CAJAS',
+        'POSICIÓN\nARANCELARIA\nHTS CODE',
         'DESCRIPCIÓN / DESCRIPTION',
         'UNIDADES O\nCANTIDAD /\nUNITS OR\nPACKAGES',
-        'PRECIO\nUNITARIO\nPRICE\n(EACH/USD)',
+        'PRECIO FOB\nUNITARIO\n(EACH/USD)',
         'TOTAL UNIT\nTOTAL USD'
       ]],
       body: tableData,
@@ -260,12 +268,13 @@ export const generateProformaPDF = async (cotizacionId) => {
         valign: 'middle'
       },
       columnStyles: {
-        0: { halign: 'center', cellWidth: 20 },
-        1: { halign: 'center', cellWidth: 24 },
-        2: { halign: 'left', cellWidth: 60, overflow: 'linebreak' },
-        3: { halign: 'center', cellWidth: 20 },
-        4: { halign: 'right', cellWidth: 24 },
-        5: { halign: 'right', cellWidth: 24 }
+        0: { halign: 'center', cellWidth: 15 },
+        1: { halign: 'center', cellWidth: 15 },
+        2: { halign: 'center', cellWidth: 20 },
+        3: { halign: 'left', cellWidth: 50, overflow: 'linebreak' },
+        4: { halign: 'center', cellWidth: 20 },
+        5: { halign: 'right', cellWidth: 20 },
+        6: { halign: 'right', cellWidth: 20 }
       }
     })
 
@@ -273,8 +282,9 @@ export const generateProformaPDF = async (cotizacionId) => {
     y = doc.lastAutoTable.finalY
     const subtotal = sortedRefs.reduce((sum, ref) => {
       const precio = ref.precio_modificado_cop || ref.referencias.precio_cop || 0
-      const precioUSD = precio / cotizacion.tasa_cambio
-      return sum + (precioUSD * ref.cantidad)
+      const precioBaseUSD = precio / cotizacion.tasa_cambio
+      const precioFOB = precioBaseUSD + costoLogisticaPorUnidad
+      return sum + (precioFOB * ref.cantidad)
     }, 0)
 
     const totalsData = [
