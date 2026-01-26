@@ -260,15 +260,15 @@ export const generateProformaPDF = async (cotizacionId) => {
         valign: 'middle'
       },
       columnStyles: {
-        0: { halign: 'center', cellWidth: 10 },
-        1: { halign: 'center', cellWidth: 10 },
-        2: { halign: 'center', cellWidth: 16 },
-        3: { halign: 'center', cellWidth: 16 },
-        4: { halign: 'center', cellWidth: 16 },
-        5: { halign: 'left', cellWidth: 42, overflow: 'linebreak' },
-        6: { halign: 'center', cellWidth: 15 },
-        7: { halign: 'right', cellWidth: 18 },
-        8: { halign: 'right', cellWidth: 18 }
+        0: { halign: 'center', cellWidth: 13 },  // # CAJA INICIAL (antes 10)
+        1: { halign: 'center', cellWidth: 13 },  // # CAJAS (antes 10)
+        2: { halign: 'center', cellWidth: 15 },  // HTS CODE (antes 16)
+        3: { halign: 'center', cellWidth: 15 },  // CÓDIGO (antes 16)
+        4: { halign: 'center', cellWidth: 15 },  // CÓDIGO CLIENTE (antes 16)
+        5: { halign: 'left', cellWidth: 38, overflow: 'linebreak' },  // DESCRIPCIÓN (antes 42)
+        6: { halign: 'center', cellWidth: 18 },  // UNIDADES (antes 15)
+        7: { halign: 'right', cellWidth: 17 },   // PRECIO (antes 18)
+        8: { halign: 'right', cellWidth: 17 }    // TOTAL (antes 18)
       }
     })
 
