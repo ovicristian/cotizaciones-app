@@ -17,88 +17,122 @@ El algoritmo anterior sobrescribía el campo `numero_caja` en cada iteración de
 
 ## ✅ Solución Implementada
 
+### Cambio 1: Crear Múltiples Registros
+
 Se modificó la función `calcularCajasAutomaticamente()` en [EditCotizacion.jsx](src/components/cotizaciones/EditCotizacion.jsx#L138) para:
 
 1. **Crear múltiples registros** cuando una referencia necesita más de una caja
 2. Cada registro representa la cantidad específica que va en cada caja
 3. Cada registro tiene su propio `numero_caja` único
 
-### Ejemplo de Resultado Correcto
+### Cambio 2: Actualización Automática de Unidades de Carga
 
-**Entrada:**
-- Referencia: "CALIPER BOXER"
-- Cantidad total: 100,000 unidades
-- Capacidad: 200 unidades/caja
+Ahora el botón **"Calcular Cajas Automáticamente"** también:
+- Cuenta automáticamente las cajas únicas
+- Actualiza el campo **"Unidades de Carga"** sin necesidad de hacer clic en "Auto" por separado
 
-**Salida:**
-```
-[
-  { referencia_id: 1, cantidad: 200, numero_caja: 1 },
-  { referencia_id: 1, cantidad: 200, numero_caja: 2 },
-  { referencia_id: 1, cantidad: 200, numero_caja: 3 },
-  ...
-  { referencia_id: 1, cantidad: 200, numero_caja: 500 }
-]
-```
+## 🧪 Cómo Probar (PASO A PASO)
 
-**Unidades de carga calculadas:** 500 cajas ✅
+### ✅ Prueba del Caso Reportado: 100,000 Unidades
 
-## 🧪 Cómo Probar
+1. **Abrir el navegador** en `http://localhost:5173`
+2. **Login** con credenciales de Supabase
+3. Ir a **Cotizaciones** → Click en **"Editar"** en cualquier cotización
+4. En la sección de **Referencias**:
+   - Agregar o seleccionar una referencia que tenga `cantidad_minima_caja` configurado (ej: 200)
+   - En el campo **Cantidad**, ingresar: `100000`
+5. Click en botón verde **"Calcular Cajas Automáticamente"**
 
-### Prueba 1: Cantidad Grande (El caso reportado)
-1. Ir a **Cotizaciones** → **Editar una cotización**
-2. Agregar una referencia con:
-   - Cantidad: 100,000
-   - (La referencia debe tener `cantidad_minima_caja` configurado, ej: 200)
-3. Click en **"Calcular Cajas Automáticamente"**
-4. Verificar que se crean 500 registros en la tabla
-5. Click en **"Auto"** junto a "Unidades de Carga"
-6. Verificar que muestra **500** unidades de carga
+**Resultado Esperado:**
+- ✅ La tabla de referencias se expande mostrando **500 filas** (una por cada caja)
+- ✅ Cada fila muestra:
+  - Cantidad: 200
+  - # Caja: números del 1 al 500
+- ✅ El campo **"Unidades de Carga"** se actualiza automáticamente a: **500**
 
-### Prueba 2: Cantidad Parcial
-1. Agregar referencia con cantidad: 550 unidades (capacidad: 200)
-2. Calcular cajas
-3. Verificar 3 registros:
-   - Caja 1: 200 unidades
-   - Caja 2: 200 unidades
-   - Caja 3: 150 unidades
+**Antes del fix:**
+- ❌ Solo 1 fila visible
+- ❌ Unidades de carga: 1
 
-### Prueba 3: Múltiples Referencias de la Misma Familia
-1. Agregar 2 referencias de la misma familia:
-   - Ref A: 300 unidades
-   - Ref B: 300 unidades
+### ✅ Prueba 2: Cantidad con Resto (550 unidades)
+
+1. Agregar referencia con cantidad: `550` (capacidad: 200/caja)
+2. Click en **"Calcular Cajas Automáticamente"**
+
+**Resultado Esperado:**
+- Caja #1: 200 unidades
+- Caja #2: 200 unidades  
+- Caja #3: 150 unidades
+- **Unidades de carga: 3** ✅
+
+### ✅ Prueba 3: Múltiples Productos de Misma Familia
+
+1. Agregar 2 referencias de la **misma familia** (ej: ambos "caliper"):
+   - Producto A: 300 unidades
+   - Producto B: 300 unidades
    - Capacidad: 200 unidades/caja
-2. Calcular cajas
-3. Verificar que se agrupan correctamente:
-   - Caja 1: Ref A, 200 unidades
-   - Caja 2: Ref A, 100 unidades + Ref B, 100 unidades
-   - Caja 3: Ref B, 200 unidades
+2. Click en **"Calcular Cajas Automáticamente"**
 
-## 📊 Impacto en Documentos
+**Resultado Esperado:**
+- Caja #1: Producto A, 200 unidades
+- Caja #2: Producto A, 100 + Producto B, 100 unidades (comparten caja)
+- Caja #3: Producto B, 200 unidades
+- **Total: 3 cajas** ✅
 
-Los documentos generados (PDF, Excel, Word) ahora mostrarán correctamente:
-- Múltiples filas para la misma referencia cuando ocupa varias cajas
-- Cada fila con su número de caja correspondiente
-- Total de unidades de carga correcto
+### ⚠️ Verificar en Documentos Generados
 
-## 🔄 Cambios en la Interfaz
+Después de calcular cajas:
+1. Click en **"Guardar"**
+2. Volver a la lista de cotizaciones
+3. Click en **"PDF"** o **"Excel"**
 
-No hay cambios visuales en la interfaz. El comportamiento es el mismo desde el punto de vista del usuario, excepto que:
-- Se verán más filas en la tabla de referencias cuando se calculan cajas
-- Cada fila representa la porción que va en cada caja específica
+**Verificar que:**
+- ✅ Se muestran 500 filas para el producto de 100,000 unidades
+- ✅ Cada fila tiene su número de caja correcto
+- ✅ Las cantidades son correctas (200 por caja)
 
-## ⚠️ Consideraciones
+## 📊 Impacto Visual en la Interfaz
 
-- **Referencias sin familia o con capacidad 0:** Siguen asignándose a una caja individual sin dividirse
-- **Orden de cajas:** Las referencias se ordenan por número de caja cuando se usa "Ordenar por # Caja"
-- **Edición manual:** Los usuarios aún pueden editar manualmente los números de caja y cantidades si lo desean
+**IMPORTANTE:** Ahora verás **más filas** en la tabla de referencias después de calcular cajas.
 
-## 🚀 Branch
+**Antes:**
+```
+Producto A | 100,000 | # Caja: 500
+```
+
+**Ahora:**
+```
+Producto A | 200 | # Caja: 1
+Producto A | 200 | # Caja: 2
+Producto A | 200 | # Caja: 3
+...
+Producto A | 200 | # Caja: 500
+```
+
+Esto es **normal y correcto** - cada fila representa el contenido de una caja específica.
+
+## 🔄 Comandos Git
 
 Los cambios están en la rama: `fix/calculo-cajas`
 
-Para integrar:
 ```bash
+# Ver los cambios
+git log --oneline
+
+# Integrar a master
 git checkout master
 git merge fix/calculo-cajas
+git push origin master
 ```
+
+## 📝 Resumen de Commits
+
+1. ✅ Corrección principal del algoritmo de cajas
+2. ✅ Actualización automática de unidades de carga
+3. ✅ Documentación y pruebas
+
+---
+
+**Fecha de implementación:** 26 de enero de 2026  
+**Branch:** `fix/calculo-cajas`  
+**Archivos modificados:** `EditCotizacion.jsx`

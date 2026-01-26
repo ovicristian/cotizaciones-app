@@ -148,8 +148,8 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
       const cantidad = parseInt(ref.cantidad) || 0
       const capacidadCaja = parseInt(referencia.cantidad_minima_caja) || 0
 
-      // Si no tiene familia o no tiene capacidad definida, asignar caja individual
-      if (!familia || capacidadCaja === 0) {
+      // Si no tiene capacidad definida, asignar todo a una caja individual
+      if (capacidadCaja === 0 || !capacidadCaja) {
         nuevasReferencias.push({
           ...ref,
           numero_caja: numeroCajaActual
@@ -158,9 +158,12 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
         return
       }
 
-      // Si la familia no existe en el tracker, inicializarla
-      if (!cajasPorFamilia[familia]) {
-        cajasPorFamilia[familia] = {
+      // Usar la familia como clave, si no tiene familia usar el ID de la referencia
+      const claveAgrupacion = familia || `ref_${referencia.id}`
+
+      // Si la familia/clave no existe en el tracker, inicializarla
+      if (!cajasPorFamilia[claveAgrupacion]) {
+        cajasPorFamilia[claveAgrupacion] = {
           capacidad: capacidadCaja,
           cantidad_actual: 0,
           numero_caja: numeroCajaActual
@@ -168,7 +171,7 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
         numeroCajaActual++
       }
 
-      const familiaInfo = cajasPorFamilia[familia]
+      const familiaInfo = cajasPorFamilia[claveAgrupacion]
       
       // Distribuir la cantidad en cajas, creando múltiples registros si es necesario
       let cantidadRestante = cantidad
