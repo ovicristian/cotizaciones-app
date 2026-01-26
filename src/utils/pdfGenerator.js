@@ -260,15 +260,15 @@ export const generateProformaPDF = async (cotizacionId) => {
         valign: 'middle'
       },
       columnStyles: {
-        0: { halign: 'center', cellWidth: 13 },  // # CAJA INICIAL (antes 10)
-        1: { halign: 'center', cellWidth: 13 },  // # CAJAS (antes 10)
-        2: { halign: 'center', cellWidth: 15 },  // HTS CODE (antes 16)
-        3: { halign: 'center', cellWidth: 15 },  // CÓDIGO (antes 16)
-        4: { halign: 'center', cellWidth: 15 },  // CÓDIGO CLIENTE (antes 16)
-        5: { halign: 'left', cellWidth: 38, overflow: 'linebreak' },  // DESCRIPCIÓN (antes 42)
-        6: { halign: 'center', cellWidth: 18 },  // UNIDADES (antes 15)
-        7: { halign: 'right', cellWidth: 17 },   // PRECIO (antes 18)
-        8: { halign: 'right', cellWidth: 17 }    // TOTAL (antes 18)
+        0: { halign: 'center', cellWidth: 15 },  // # CAJA INICIAL
+        1: { halign: 'center', cellWidth: 15 },  // # CAJAS
+        2: { halign: 'center', cellWidth: 18 },  // HTS CODE
+        3: { halign: 'center', cellWidth: 17 },  // CÓDIGO
+        4: { halign: 'center', cellWidth: 17 },  // CÓDIGO CLIENTE
+        5: { halign: 'left', cellWidth: 45, overflow: 'linebreak' },  // DESCRIPCIÓN
+        6: { halign: 'center', cellWidth: 20 },  // UNIDADES
+        7: { halign: 'right', cellWidth: 19 },   // PRECIO
+        8: { halign: 'right', cellWidth: 19 }    // TOTAL
       }
     })
 
