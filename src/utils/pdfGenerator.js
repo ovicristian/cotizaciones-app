@@ -220,7 +220,8 @@ export const generateProformaPDF = async (cotizacionId) => {
       const descripcionCompleta = referencia?.descripcion || 'Sin descripción'
       
       return [
-        ref.numero_caja || '', // # DE CAJAS
+        ref.numero_caja || '', // # DE CAJA INICIAL
+        ref.numero_cajas || 1, // # CAJAS
         referencia?.codigo_arancelario || '', // HTS CODE
         referencia?.nombre || '', // CÓDIGO (nombre de la referencia)
         ref.codigo_cliente || '', // CÓDIGO CLIENTE
@@ -234,7 +235,8 @@ export const generateProformaPDF = async (cotizacionId) => {
     autoTable(doc, {
       startY: y,
       head: [[
-        '# DE CAJA / BOX #',
+        '# CAJA\nINICIAL',
+        '# CAJAS',
         'POSICIÓN ARANCELARIA\nHTS CODE',
         'CÓDIGO',
         'CÓDIGO\nCLIENTE',
@@ -258,14 +260,15 @@ export const generateProformaPDF = async (cotizacionId) => {
         valign: 'middle'
       },
       columnStyles: {
-        0: { halign: 'center', cellWidth: 12 },
-        1: { halign: 'center', cellWidth: 18 },
-        2: { halign: 'center', cellWidth: 18 },
-        3: { halign: 'center', cellWidth: 18 },
-        4: { halign: 'left', cellWidth: 45, overflow: 'linebreak' },
-        5: { halign: 'center', cellWidth: 16 },
-        6: { halign: 'right', cellWidth: 20 },
-        7: { halign: 'right', cellWidth: 20 }
+        0: { halign: 'center', cellWidth: 10 },
+        1: { halign: 'center', cellWidth: 10 },
+        2: { halign: 'center', cellWidth: 16 },
+        3: { halign: 'center', cellWidth: 16 },
+        4: { halign: 'center', cellWidth: 16 },
+        5: { halign: 'left', cellWidth: 42, overflow: 'linebreak' },
+        6: { halign: 'center', cellWidth: 15 },
+        7: { halign: 'right', cellWidth: 18 },
+        8: { halign: 'right', cellWidth: 18 }
       }
     })
 

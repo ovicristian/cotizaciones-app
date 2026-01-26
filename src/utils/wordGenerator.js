@@ -192,7 +192,8 @@ export const generateProformaWord = async (cotizacionId) => {
               // Header
               new TableRow({
                 children: [
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '# CAJA', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '# CAJA INICIAL', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '# CAJAS', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'HTS CODE', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'CÓDIGO CLIENTE', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'DESCRIPCIÓN', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
@@ -228,6 +229,7 @@ export const generateProformaWord = async (cotizacionId) => {
                 return new TableRow({
                   children: [
                     new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: (ref.numero_caja || '').toString(), font: 'Arial' })] })] }),
+                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: (ref.numero_cajas || 1).toString(), font: 'Arial' })] })] }),
                     new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: referencia?.codigo_arancelario || '', font: 'Arial' })] })] }),
                     new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ref.codigo_cliente || '', font: 'Arial' })] })] }),
                     new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: descripcionCompleta, font: 'Arial' })] })] }),
