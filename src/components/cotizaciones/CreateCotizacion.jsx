@@ -132,6 +132,46 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
     setSelectedRefs(prev => [...prev, ...productos])
   }
 
+  const calcularDimensiones = () => {
+    // Calcular dimensiones totales basadas en las cajas
+    // Tomar la dimensión máxima de cada eje multiplicada por la cantidad de cajas
+    let maxLargo = 0
+    let maxAncho = 0
+    let maxAlto = 0
+    let totalCajas = 0
+
+    selectedRefs.forEach(ref => {
+      const referencia = referencias.find(r => r.id === ref.referencia_id)
+      if (!referencia) return
+
+      const cantidadCajas = parseInt(ref.cantidad_cajas) || 0
+      if (cantidadCajas === 0) return
+
+      const largo = parseFloat(referencia.largo) || 0
+      const ancho = parseFloat(referencia.ancho) || 0
+      const alto = parseFloat(referencia.alto) || 0
+
+      // Actualizar máximos
+      if (largo > maxLargo) maxLargo = largo
+      if (ancho > maxAncho) maxAncho = ancho
+      if (alto > maxAlto) maxAlto = alto
+      
+      totalCajas += cantidadCajas
+    })
+
+    // Si hay cajas, calcular las dimensiones
+    if (totalCajas > 0) {
+      // Asumir apilamiento: largo y ancho = máximo, alto = máximo * cantidad de cajas
+      // (esto es una simplificación, puede ajustarse según la lógica de empaque)
+      setFormData(prev => ({
+        ...prev,
+        dimension_l: maxLargo.toFixed(2),
+        dimension_w: maxAncho.toFixed(2),
+        dimension_h: (maxAlto * totalCajas).toFixed(2)
+      }))
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -403,15 +443,25 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Largo / Length (m)
               </label>
-              <input
-                type="number"
-                name="dimension_l"
-                value={formData.dimension_l}
-                onChange={handleChange}
-                step="0.01"
-                placeholder="1.2"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  name="dimension_l"
+                  value={formData.dimension_l}
+                  onChange={handleChange}
+                  step="0.01"
+                  placeholder="1.2"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <button
+                  type="button"
+                  onClick={calcularDimensiones}
+                  className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+                  title="Calcular automáticamente basado en dimensiones de cajas"
+                >
+                  Auto
+                </button>
+              </div>
             </div>
 
             {/* Ancho (W) */}
