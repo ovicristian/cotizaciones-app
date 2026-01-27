@@ -49,28 +49,40 @@ export default function EditReferencia({ referencia, onClose, onSuccess }) {
     setError(null)
 
     try {
-      const { error: updateError } = await supabase
-        .from('referencias')
-        .update({
-          nombre: formData.nombre,
-          descripcion: formData.descripcion,
-          familia: formData.familia,
-          codigo_arancelario: formData.codigo_arancelario || null,
-          precio_cop: parseFloat(formData.precio_cop) || null,
-          peso_unitario: parseFloat(formData.peso_unitario) || null,
-          cantidad_minima_caja: parseInt(formData.cantidad_minima_caja) || null,
-          alto: parseFloat(formData.alto) || null,
-          ancho: parseFloat(formData.ancho) || null,
-          largo: parseFloat(formData.largo) || null
-        })
-        .eq('id', referencia.id)
+      const dataToSave = {
+        nombre: formData.nombre,
+        descripcion: formData.descripcion,
+        familia: formData.familia,
+        codigo_arancelario: formData.codigo_arancelario || null,
+        precio_cop: parseFloat(formData.precio_cop) || null,
+        peso_unitario: parseFloat(formData.peso_unitario) || null,
+        cantidad_minima_caja: parseInt(formData.cantidad_minima_caja) || null,
+        alto: parseFloat(formData.alto) || null,
+        ancho: parseFloat(formData.ancho) || null,
+        largo: parseFloat(formData.largo) || null
+      }
 
-      if (updateError) throw updateError
+      if (referencia) {
+        // Modo edición
+        const { error: updateError } = await supabase
+          .from('referencias')
+          .update(dataToSave)
+          .eq('id', referencia.id)
+
+        if (updateError) throw updateError
+      } else {
+        // Modo creación
+        const { error: insertError } = await supabase
+          .from('referencias')
+          .insert([dataToSave])
+
+        if (insertError) throw insertError
+      }
 
       onSuccess?.()
       onClose()
     } catch (err) {
-      setError('Error al actualizar: ' + err.message)
+      setError(`Error al ${referencia ? 'actualizar' : 'crear'}: ` + err.message)
     } finally {
       setLoading(false)
     }
@@ -81,7 +93,7 @@ export default function EditReferencia({ referencia, onClose, onSuccess }) {
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b">
-          <h2 className="text-2xl font-bold text-gray-800">Editar Referencia</h2>
+          <h2 className="text-2xl font-bold text-gray-800">{referencia ? 'Editar Referencia' : 'Crear Nueva Referencia'}</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
             <X size={24} />
           </button>
@@ -263,7 +275,7 @@ export default function EditReferencia({ referencia, onClose, onSuccess }) {
               className="px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-colors disabled:opacity-50 flex items-center gap-2"
             >
               <Save size={18} />
-              {loading ? 'Guardando...' : 'Guardar Cambios'}
+              {loading ? 'Guardando...' : (referencia ? 'Guardar Cambios' : 'Crear Referencia')}
             </button>
           </div>
         </form>

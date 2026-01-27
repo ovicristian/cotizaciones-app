@@ -8,6 +8,7 @@ export default function Referencias() {
   const [referencias, setReferencias] = useState([])
   const [loading, setLoading] = useState(true)
   const [showImportModal, setShowImportModal] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingReferencia, setEditingReferencia] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -90,7 +91,10 @@ export default function Referencias() {
             <Upload size={20} />
             Importar CSV
           </button>
-          <button className="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center gap-2">
+          <button 
+            onClick={() => setShowCreateModal(true)}
+            className="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center gap-2"
+          >
             <Plus size={20} />
             Nueva Referencia
           </button>
@@ -239,6 +243,18 @@ export default function Referencias() {
           onClose={() => setShowImportModal(false)}
           onSuccess={() => {
             setShowImportModal(false)
+            fetchReferencias()
+          }}
+        />
+      )}
+
+      {/* Modal de Creación */}
+      {showCreateModal && (
+        <EditReferencia
+          referencia={null}
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false)
             fetchReferencias()
           }}
         />
