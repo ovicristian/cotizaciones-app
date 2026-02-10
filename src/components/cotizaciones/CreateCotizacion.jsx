@@ -4,10 +4,11 @@ import { X, Save, Plus, Trash2 } from 'lucide-react'
 import Select from 'react-select'
 import ImportProductosExcel from './ImportProductosExcel'
 
-export default function CreateCotizacion({ onClose, onSuccess }) {
+export default function CreateCotizacion({ onClose, onSuccess, tipo = 'internacional' }) {
   const [clientes, setClientes] = useState([])
   const [referencias, setReferencias] = useState([])
   const [formData, setFormData] = useState({
+    tipo: tipo,
     numero_cotizacion: '',
     cliente_id: '',
     contacto_nombre: '',
@@ -21,7 +22,10 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
     dimension_w: '',
     dimension_h: '',
     costo_logistica_usd: '',
-    observaciones: ''
+    costo_logistica_cop: '',
+    observaciones: '',
+    ciudad_origen: '',
+    ciudad_destino: ''
   })
   const [selectedRefs, setSelectedRefs] = useState([])
   const [loading, setLoading] = useState(false)
@@ -190,19 +194,23 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
       const { data: cotizacion, error: cotizacionError } = await supabase
         .from('cotizaciones')
         .insert([{
+          tipo: formData.tipo,
           numero_cotizacion: formData.numero_cotizacion,
           cliente_id: formData.cliente_id,
           contacto_nombre: formData.contacto_nombre,
-          tasa_cambio: parseFloat(formData.tasa_cambio),
+          tasa_cambio: formData.tipo === 'internacional' && formData.tasa_cambio ? parseFloat(formData.tasa_cambio) : null,
           vigencia: formData.vigencia,
           modo_transporte: formData.modo_transporte,
-          incoterm: formData.incoterm,
+          incoterm: formData.tipo === 'internacional' ? formData.incoterm : null,
           peso_total: formData.peso_total ? parseFloat(formData.peso_total) : null,
           unidades_carga: formData.unidades_carga ? parseInt(formData.unidades_carga) : null,
           dimension_l: formData.dimension_l ? parseFloat(formData.dimension_l) : null,
           dimension_w: formData.dimension_w ? parseFloat(formData.dimension_w) : null,
           dimension_h: formData.dimension_h ? parseFloat(formData.dimension_h) : null,
-          costo_logistica_usd: formData.costo_logistica_usd ? parseFloat(formData.costo_logistica_usd) : 0,
+          costo_logistica_usd: formData.tipo === 'internacional' && formData.costo_logistica_usd ? parseFloat(formData.costo_logistica_usd) : 0,
+          costo_logistica_cop: formData.tipo === 'nacional' && formData.costo_logistica_cop ? parseFloat(formData.costo_logistica_cop) : 0,
+          ciudad_origen: formData.tipo === 'nacional' ? formData.ciudad_origen : null,
+          ciudad_destino: formData.tipo === 'nacional' ? formData.ciudad_destino : null,
           observaciones: formData.observaciones || null,
           user_id: user.id
         }])
@@ -241,7 +249,14 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b">
-          <h2 className="text-2xl font-bold text-gray-800">Nueva Cotización</h2>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">
+              Nueva Cotización {formData.tipo === 'nacional' ? 'Nacional' : 'Internacional'}
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">
+              {formData.tipo === 'nacional' ? 'Cotización para mercado nacional en COP' : 'Cotización para exportación con conversión USD'}
+            </p>
+          </div>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
             <X size={24} />
           </button>
@@ -306,24 +321,58 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
                 />
               </div>
 
-              {/* Tasa de Cambio */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tasa de Cambio (COP/USD) *
-                </label>
-                <input
-                  type="number"
-                  name="tasa_cambio"
-                  value={formData.tasa_cambio}
-                  onChange={handleChange}
-                  required
-                  step="0.01"
-                  placeholder="4000"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <small className="text-gray-500">Ej: 4000 = $4,000 COP por $1 USD</small>
-              </div>
+              {/* Tasa de Cambio - Solo para internacionales */}
+              {formData.tipo === 'internacional' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tasa de Cambio (COP/USD) *
+                  </label>
+                  <input
+                    type="number"
+                    name="tasa_cambio"
+                    value={formData.tasa_cambio}
+                    onChange={handleChange}
+                    required={formData.tipo === 'internacional'}
+                    step="0.01"
+                    placeholder="4000"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <small className="text-gray-500">Ej: 4000 = $4,000 COP por $1 USD</small>
+                </div>
+              )}
             </div>
+
+            {/* Ciudades - Solo para nacionales */}
+            {formData.tipo === 'nacional' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Ciudad de Origen
+                  </label>
+                  <input
+                    type="text"
+                    name="ciudad_origen"
+                    value={formData.ciudad_origen}
+                    onChange={handleChange}
+                    placeholder="Ej: Bogotá"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Ciudad de Destino
+                  </label>
+                  <input
+                    type="text"
+                    name="ciudad_destino"
+                    value={formData.ciudad_destino}
+                    onChange={handleChange}
+                    placeholder="Ej: Medellín"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Vigencia */}
             <div>
@@ -342,18 +391,22 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
             {/* Costo de Logística */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Costo de Logística (USD)
+                Costo de Logística ({formData.tipo === 'internacional' ? 'USD' : 'COP'})
               </label>
               <input
                 type="number"
-                name="costo_logistica_usd"
-                value={formData.costo_logistica_usd}
+                name={formData.tipo === 'internacional' ? 'costo_logistica_usd' : 'costo_logistica_cop'}
+                value={formData.tipo === 'internacional' ? formData.costo_logistica_usd : formData.costo_logistica_cop}
                 onChange={handleChange}
                 step="0.01"
                 placeholder="0.00"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-              <small className="text-gray-500">Costo que se distribuirá entre todas las unidades (precio FOB)</small>
+              <small className="text-gray-500">
+                {formData.tipo === 'internacional' 
+                  ? 'Costo que se distribuirá entre todas las unidades (precio FOB)'
+                  : 'Costo de logística que se distribuirá entre todas las unidades'}
+              </small>
             </div>
           </div>
 
@@ -378,31 +431,33 @@ export default function CreateCotizacion({ onClose, onSuccess }) {
               </select>
             </div>
 
-            {/* Incoterm */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Incoterm
-              </label>
-              <select
-                name="incoterm"
-                value={formData.incoterm}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Seleccionar...</option>
-                <option value="EXW">EXW - Ex Works</option>
-                <option value="FCA">FCA - Free Carrier</option>
-                <option value="CPT">CPT - Carriage Paid To</option>
-                <option value="CIP">CIP - Carriage and Insurance Paid To</option>
-                <option value="DAP">DAP - Delivered at Place</option>
-                <option value="DPU">DPU - Delivered at Place Unloaded</option>
-                <option value="DDP">DDP - Delivered Duty Paid</option>
-                <option value="FAS">FAS - Free Alongside Ship</option>
-                <option value="FOB">FOB - Free on Board</option>
-                <option value="CFR">CFR - Cost and Freight</option>
-                <option value="CIF">CIF - Cost, Insurance and Freight</option>
-              </select>
-            </div>
+            {/* Incoterm - Solo para internacionales */}
+            {formData.tipo === 'internacional' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Incoterm
+                </label>
+                <select
+                  name="incoterm"
+                  value={formData.incoterm}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Seleccionar...</option>
+                  <option value="EXW">EXW - Ex Works</option>
+                  <option value="FCA">FCA - Free Carrier</option>
+                  <option value="CPT">CPT - Carriage Paid To</option>
+                  <option value="CIP">CIP - Carriage and Insurance Paid To</option>
+                  <option value="DAP">DAP - Delivered at Place</option>
+                  <option value="DPU">DPU - Delivered at Place Unloaded</option>
+                  <option value="DDP">DDP - Delivered Duty Paid</option>
+                  <option value="FAS">FAS - Free Alongside Ship</option>
+                  <option value="FOB">FOB - Free on Board</option>
+                  <option value="CFR">CFR - Cost and Freight</option>
+                  <option value="CIF">CIF - Cost, Insurance and Freight</option>
+                </select>
+              </div>
+            )}
 
             {/* Peso Total */}
             <div>

@@ -201,17 +201,32 @@ export const generateProformaPDF = async (cotizacionId) => {
     // Products table
     y = doc.lastAutoTable.finalY + 5
     
+    // Determinar si es cotización nacional o internacional
+    const esNacional = cotizacion.tipo === 'nacional'
+    
     // Calcular costo de logística por unidad
-    const costoLogisticaUSD = parseFloat(cotizacion.costo_logistica_usd) || 0
+    const costoLogistica = esNacional 
+      ? (parseFloat(cotizacion.costo_logistica_cop) || 0)
+      : (parseFloat(cotizacion.costo_logistica_usd) || 0)
     const totalUnidades = sortedRefs.reduce((sum, ref) => sum + ref.cantidad, 0)
-    const costoLogisticaPorUnidad = totalUnidades > 0 ? costoLogisticaUSD / totalUnidades : 0
+    const costoLogisticaPorUnidad = totalUnidades > 0 ? costoLogistica / totalUnidades : 0
     
     const tableData = sortedRefs.map(ref => {
       const referencia = ref.referencias
       const precioCOP = ref.precio_modificado_cop || referencia.precio_cop || 0
-      const precioBaseUSD = precioCOP / cotizacion.tasa_cambio
-      const precioFOB = (precioBaseUSD + costoLogisticaPorUnidad).toFixed(2)
-      const totalUSD = (precioFOB * ref.cantidad).toFixed(2)
+      
+      let precioFinal, totalFinal
+      
+      if (esNacional) {
+        // Para cotización nacional: precio en COP + costo de logística en COP
+        precioFinal = (precioCOP + costoLogisticaPorUnidad).toFixed(2)
+        totalFinal = (precioFinal * ref.cantidad).toFixed(2)
+      } else {
+        // Para cotización internacional: convertir a USD y agregar costo de logística
+        const precioBaseUSD = precioCOP / cotizacion.tasa_cambio
+        precioFinal = (precioBaseUSD + costoLogisticaPorUnidad).toFixed(2)
+        totalFinal = (precioFinal * ref.cantidad).toFixed(2)
+      }
       
       // Build complete description: codigo - nombre - descripcion
       const codigo = referencia?.codigo || ''
@@ -237,8 +252,8 @@ export const generateProformaPDF = async (cotizacionId) => {
         referencia?.codigo_arancelario || '', // HTS CODE
         descripcionCompleta, // DESCRIPCIÓN COMPLETA
         ref.cantidad.toString(), // UNIDADES
-        `$${precioFOB}`, // PRECIO FOB UNITARIO
-        `$${totalUSD}` // TOTAL
+        `${esNacional ? '$' : '$'}${precioFinal}`, // PRECIO UNITARIO
+        `${esNacional ? '$' : '$'}${totalFinal}` // TOTAL
       ]
     })
 
@@ -250,8 +265,8 @@ export const generateProformaPDF = async (cotizacionId) => {
         'POSICIÓN\nARANCELARIA\nHTS CODE',
         'DESCRIPCIÓN / DESCRIPTION',
         'UNIDADES O\nCANTIDAD /\nUNITS OR\nPACKAGES',
-        'PRECIO FOB\nUNITARIO\n(EACH/USD)',
-        'TOTAL UNIT\nTOTAL USD'
+        esNacional ? 'PRECIO\nUNITARIO\n(COP)' : 'PRECIO FOB\nUNITARIO\n(EACH/USD)',
+        esNacional ? 'TOTAL\n(COP)' : 'TOTAL UNIT\nTOTAL USD'
       ]],
       body: tableData,
       theme: 'grid',
@@ -281,19 +296,26 @@ export const generateProformaPDF = async (cotizacionId) => {
     // Totals
     y = doc.lastAutoTable.finalY
     const subtotal = sortedRefs.reduce((sum, ref) => {
-      const precio = ref.precio_modificado_cop || ref.referencias.precio_cop || 0
-      const precioBaseUSD = precio / cotizacion.tasa_cambio
-      const precioFOB = precioBaseUSD + costoLogisticaPorUnidad
-      return sum + (precioFOB * ref.cantidad)
+      const precioCOP = ref.precio_modificado_cop || ref.referencias.precio_cop || 0
+      
+      if (esNacional) {
+        const precioFinal = precioCOP + costoLogisticaPorUnidad
+        return sum + (precioFinal * ref.cantidad)
+      } else {
+        const precioBaseUSD = precioCOP / cotizacion.tasa_cambio
+        const precioFOB = precioBaseUSD + costoLogisticaPorUnidad
+        return sum + (precioFOB * ref.cantidad)
+      }
     }, 0)
 
+    const moneda = esNacional ? 'COP' : 'USD'
     const totalsData = [
-      ['SUBTOTAL USD $', `$${subtotal.toFixed(2)}`],
+      [`SUBTOTAL ${moneda} $`, `$${subtotal.toFixed(2)}`],
       ['DESCUENTO / DISCOUNT', '$0.00'],
-      ['SEGURO / INSURANCE', '0 USD'],
-      ['FLETE / SHIPPING', '0 USD'],
-      ['TOTAL USD $', `$${subtotal.toFixed(2)}`]
-    ]
+      esNacional ? null : ['SEGURO / INSURANCE', '0 USD'],
+      esNacional ? null : ['FLETE / SHIPPING', '0 USD'],
+      [`TOTAL ${moneda} $`, `$${subtotal.toFixed(2)}`]
+    ].filter(Boolean)
 
     autoTable(doc, {
       startY: y,

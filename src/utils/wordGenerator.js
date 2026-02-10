@@ -49,17 +49,28 @@ export const generateProformaWord = async (cotizacionId) => {
 
     const proformaNum = cotizacion.numero_cotizacion || `${cotizacion.id.toString().padStart(3, '0')}`
 
-    // Calcular costo de logística por unidad
-    const costoLogisticaUSD = parseFloat(cotizacion.costo_logistica_usd) || 0
-    const totalUnidades = sortedRefs.reduce((sum, ref) => sum + ref.cantidad, 0)
-    const costoLogisticaPorUnidad = totalUnidades > 0 ? costoLogisticaUSD / totalUnidades : 0
+    // Determinar si es cotización nacional o internacional
+    const esNacional = cotizacion.tipo === 'nacional'
 
-    // Calcular subtotal con precio FOB
+    // Calcular costo de logística por unidad
+    const costoLogistica = esNacional 
+      ? (parseFloat(cotizacion.costo_logistica_cop) || 0)
+      : (parseFloat(cotizacion.costo_logistica_usd) || 0)
+    const totalUnidades = sortedRefs.reduce((sum, ref) => sum + ref.cantidad, 0)
+    const costoLogisticaPorUnidad = totalUnidades > 0 ? costoLogistica / totalUnidades : 0
+
+    // Calcular subtotal con precio final (FOB para internacional, con logística para nacional)
     const subtotal = sortedRefs.reduce((sum, ref) => {
-      const precio = ref.precio_modificado_cop || ref.referencias.precio_cop || 0
-      const precioBaseUSD = precio / cotizacion.tasa_cambio
-      const precioFOB = precioBaseUSD + costoLogisticaPorUnidad
-      return sum + (precioFOB * ref.cantidad)
+      const precioCOP = ref.precio_modificado_cop || ref.referencias.precio_cop || 0
+      
+      if (esNacional) {
+        const precioFinal = precioCOP + costoLogisticaPorUnidad
+        return sum + (precioFinal * ref.cantidad)
+      } else {
+        const precioBaseUSD = precioCOP / cotizacion.tasa_cambio
+        const precioFOB = precioBaseUSD + costoLogisticaPorUnidad
+        return sum + (precioFOB * ref.cantidad)
+      }
     }, 0)
 
     // Cargar logo como base64
@@ -203,21 +214,31 @@ export const generateProformaWord = async (cotizacionId) => {
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'HTS CODE', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'DESCRIPCIÓN', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'CANTIDAD', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'PRECIO FOB USD', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'TOTAL USD', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER })
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: esNacional ? 'PRECIO COP' : 'PRECIO FOB USD', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: esNacional ? 'TOTAL COP' : 'TOTAL USD', bold: true, font: 'Arial' })] })], verticalAlign: VerticalAlign.CENTER })
                 ]
               }),
               // Datos
               ...sortedRefs.map(ref => {
-                const costoLogisticaUSD = parseFloat(cotizacion.costo_logistica_usd) || 0
+                const costoLogistica = esNacional 
+                  ? (parseFloat(cotizacion.costo_logistica_cop) || 0)
+                  : (parseFloat(cotizacion.costo_logistica_usd) || 0)
                 const totalUnidades = sortedRefs.reduce((sum, r) => sum + r.cantidad, 0)
-                const costoLogisticaPorUnidad = totalUnidades > 0 ? costoLogisticaUSD / totalUnidades : 0
+                const costoLogisticaPorUnidad = totalUnidades > 0 ? costoLogistica / totalUnidades : 0
                 
                 const referencia = ref.referencias
                 const precioCOP = ref.precio_modificado_cop || referencia.precio_cop || 0
-                const precioBaseUSD = precioCOP / cotizacion.tasa_cambio
-                const precioFOB = (precioBaseUSD + costoLogisticaPorUnidad).toFixed(2)
-                const totalUSD = (precioFOB * ref.cantidad).toFixed(2)
+                
+                let precioFinal, totalFinal
+                
+                if (esNacional) {
+                  precioFinal = (precioCOP + costoLogisticaPorUnidad).toFixed(2)
+                  totalFinal = (precioFinal * ref.cantidad).toFixed(2)
+                } else {
+                  const precioBaseUSD = precioCOP / cotizacion.tasa_cambio
+                  precioFinal = (precioBaseUSD + costoLogisticaPorUnidad).toFixed(2)
+                  totalFinal = (precioFinal * ref.cantidad).toFixed(2)
+                }
                 
                 const codigo = referencia?.codigo || ''
                 const nombre = referencia?.nombre || ''
@@ -243,8 +264,8 @@ export const generateProformaWord = async (cotizacionId) => {
                     new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: referencia?.codigo_arancelario || '', font: 'Arial' })] })] }),
                     new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: descripcionCompleta, font: 'Arial' })] })] }),
                     new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ref.cantidad.toString(), font: 'Arial' })] })] }),
-                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `$${precioFOB}`, font: 'Arial' })] })] }),
-                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `$${totalUSD}`, font: 'Arial' })] })] })
+                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `$${precioFinal}`, font: 'Arial' })] })] }),
+                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `$${totalFinal}`, font: 'Arial' })] })] })
                   ]
                 })
               })
@@ -256,7 +277,7 @@ export const generateProformaWord = async (cotizacionId) => {
           // Totales
           new Paragraph({
             children: [
-              new TextRun({ text: 'SUBTOTAL USD: ', bold: true, font: 'Arial' }),
+              new TextRun({ text: `SUBTOTAL ${esNacional ? 'COP' : 'USD'}: `, bold: true, font: 'Arial' }),
               new TextRun({ text: `$${subtotal.toFixed(2)}`, font: 'Arial' })
             ],
             alignment: AlignmentType.RIGHT
@@ -270,7 +291,7 @@ export const generateProformaWord = async (cotizacionId) => {
           }),
           new Paragraph({
             children: [
-              new TextRun({ text: 'TOTAL USD: ', bold: true, size: 24, font: 'Arial' }),
+              new TextRun({ text: `TOTAL ${esNacional ? 'COP' : 'USD'}: `, bold: true, size: 24, font: 'Arial' }),
               new TextRun({ text: `$${subtotal.toFixed(2)}`, size: 24, font: 'Arial' })
             ],
             alignment: AlignmentType.RIGHT,

@@ -11,6 +11,7 @@ export default function Cotizaciones() {
   const [cotizaciones, setCotizaciones] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [tipoCreacion, setTipoCreacion] = useState('internacional')
   const [editingCotizacion, setEditingCotizacion] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -105,13 +106,28 @@ export default function Cotizaciones() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Cotizaciones</h1>
-        <button 
-          onClick={() => setShowCreateModal(true)}
-          className="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center gap-2"
-        >
-          <Plus size={20} />
-          Nueva Cotización
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => {
+              setTipoCreacion('internacional')
+              setShowCreateModal(true)
+            }}
+            className="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center gap-2"
+          >
+            <Plus size={20} />
+            Nueva Cotización Internacional
+          </button>
+          <button 
+            onClick={() => {
+              setTipoCreacion('nacional')
+              setShowCreateModal(true)
+            }}
+            className="bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2"
+          >
+            <Plus size={20} />
+            Nueva Cotización Nacional
+          </button>
+        </div>
       </div>
 
       {/* Barra de búsqueda */}
@@ -147,6 +163,9 @@ export default function Cotizaciones() {
                   N° Cotización
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Tipo
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Cliente
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -170,10 +189,19 @@ export default function Cotizaciones() {
                     {cotizacion.numero_cotizacion || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      cotizacion.tipo === 'nacional' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {cotizacion.tipo === 'nacional' ? 'Nacional' : 'Internacional'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {cotizacion.clientes?.nombre || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${cotizacion.tasa_cambio}
+                    {cotizacion.tasa_cambio ? `$${cotizacion.tasa_cambio}` : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {cotizacion.vigencia ? new Date(cotizacion.vigencia).toLocaleDateString() : 'N/A'}
@@ -230,6 +258,7 @@ export default function Cotizaciones() {
       {/* Modal Crear Cotización */}
       {showCreateModal && (
         <CreateCotizacion
+          tipo={tipoCreacion}
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => {
             fetchCotizaciones()

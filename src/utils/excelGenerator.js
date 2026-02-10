@@ -237,10 +237,15 @@ export const generateProformaExcel = async (cotizacionId) => {
     }
     currentRow += 2
 
+    // Determinar si es cotización nacional o internacional
+    const esNacional = cotizacion.tipo === 'nacional'
+
     // Calcular costo de logística por unidad
-    const costoLogisticaUSD = parseFloat(cotizacion.costo_logistica_usd) || 0
+    const costoLogistica = esNacional 
+      ? (parseFloat(cotizacion.costo_logistica_cop) || 0)
+      : (parseFloat(cotizacion.costo_logistica_usd) || 0)
     const totalUnidades = sortedRefs.reduce((sum, ref) => sum + ref.cantidad, 0)
-    const costoLogisticaPorUnidad = totalUnidades > 0 ? costoLogisticaUSD / totalUnidades : 0
+    const costoLogisticaPorUnidad = totalUnidades > 0 ? costoLogistica / totalUnidades : 0
 
     // TABLA DE PRODUCTOS
     const productHeaderRow = currentRow
@@ -249,8 +254,8 @@ export const generateProformaExcel = async (cotizacionId) => {
     worksheet.getCell(`C${currentRow}`).value = 'HTS CODE'
     worksheet.getCell(`D${currentRow}`).value = 'DESCRIPCIÓN'
     worksheet.getCell(`E${currentRow}`).value = 'CANTIDAD'
-    worksheet.getCell(`F${currentRow}`).value = 'PRECIO FOB USD'
-    worksheet.getCell(`G${currentRow}`).value = 'TOTAL USD'
+    worksheet.getCell(`F${currentRow}`).value = esNacional ? 'PRECIO COP' : 'PRECIO FOB USD'
+    worksheet.getCell(`G${currentRow}`).value = esNacional ? 'TOTAL COP' : 'TOTAL USD'
     
     // Aplicar estilo al encabezado de productos
     for (let col = 1; col <= 7; col++) {
@@ -272,11 +277,19 @@ export const generateProformaExcel = async (cotizacionId) => {
     sortedRefs.forEach(ref => {
       const referencia = ref.referencias
       const precioCOP = ref.precio_modificado_cop || referencia.precio_cop || 0
-      const precioBaseUSD = precioCOP / cotizacion.tasa_cambio
-      const precioFOB = precioBaseUSD + costoLogisticaPorUnidad
-      const totalUSD = (precioFOB * ref.cantidad)
       
-      subtotal += totalUSD
+      let precioFinal, totalFinal
+      
+      if (esNacional) {
+        precioFinal = precioCOP + costoLogisticaPorUnidad
+        totalFinal = precioFinal * ref.cantidad
+      } else {
+        const precioBaseUSD = precioCOP / cotizacion.tasa_cambio
+        precioFinal = precioBaseUSD + costoLogisticaPorUnidad
+        totalFinal = precioFinal * ref.cantidad
+      }
+      
+      subtotal += totalFinal
 
       const codigo = referencia?.codigo || ''
       const nombre = referencia?.nombre || ''
@@ -300,8 +313,8 @@ export const generateProformaExcel = async (cotizacionId) => {
       worksheet.getCell(`C${currentRow}`).value = referencia?.codigo_arancelario || ''
       worksheet.getCell(`D${currentRow}`).value = descripcionCompleta
       worksheet.getCell(`E${currentRow}`).value = ref.cantidad
-      worksheet.getCell(`F${currentRow}`).value = precioFOB
-      worksheet.getCell(`G${currentRow}`).value = totalUSD
+      worksheet.getCell(`F${currentRow}`).value = precioFinal
+      worksheet.getCell(`G${currentRow}`).value = totalFinal
       
       // Formatear como moneda
       worksheet.getCell(`F${currentRow}`).numFmt = '$#,##0.00'
@@ -330,7 +343,8 @@ export const generateProformaExcel = async (cotizacionId) => {
     currentRow += 1
 
     // TOTALES
-    worksheet.getCell(`F${currentRow}`).value = 'SUBTOTAL USD:'
+    const moneda = esNacional ? 'COP' : 'USD'
+    worksheet.getCell(`F${currentRow}`).value = `SUBTOTAL ${moneda}:`
     worksheet.getCell(`F${currentRow}`).font = { bold: true, name: 'Arial' }
     worksheet.getCell(`F${currentRow}`).alignment = { horizontal: 'right' }
     worksheet.getCell(`G${currentRow}`).value = subtotal
@@ -346,7 +360,7 @@ export const generateProformaExcel = async (cotizacionId) => {
     worksheet.getCell(`G${currentRow}`).font = { name: 'Arial' }
     currentRow++
 
-    worksheet.getCell(`F${currentRow}`).value = 'TOTAL USD:'
+    worksheet.getCell(`F${currentRow}`).value = `TOTAL ${moneda}:`
     worksheet.getCell(`F${currentRow}`).font = { bold: true, size: 12, name: 'Arial' }
     worksheet.getCell(`F${currentRow}`).alignment = { horizontal: 'right' }
     worksheet.getCell(`G${currentRow}`).value = subtotal

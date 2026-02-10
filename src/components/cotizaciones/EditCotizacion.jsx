@@ -8,10 +8,11 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
   const [clientes, setClientes] = useState([])
   const [referencias, setReferencias] = useState([])
   const [formData, setFormData] = useState({
+    tipo: cotizacion.tipo || 'internacional',
     numero_cotizacion: cotizacion.numero_cotizacion || '',
     cliente_id: cotizacion.cliente_id,
     contacto_nombre: cotizacion.contacto_nombre || '',
-    tasa_cambio: cotizacion.tasa_cambio,
+    tasa_cambio: cotizacion.tasa_cambio || '',
     vigencia: cotizacion.vigencia || '',
     modo_transporte: cotizacion.modo_transporte || '',
     incoterm: cotizacion.incoterm || '',
@@ -21,6 +22,9 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
     dimension_w: cotizacion.dimension_w || '',
     dimension_h: cotizacion.dimension_h || '',
     costo_logistica_usd: cotizacion.costo_logistica_usd || '',
+    costo_logistica_cop: cotizacion.costo_logistica_cop || '',
+    ciudad_origen: cotizacion.ciudad_origen || '',
+    ciudad_destino: cotizacion.ciudad_destino || '',
     observaciones: cotizacion.observaciones || ''
   })
   const [selectedRefs, setSelectedRefs] = useState([])
@@ -365,19 +369,23 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
       const { error: cotizacionError } = await supabase
         .from('cotizaciones')
         .update({
+          tipo: formData.tipo,
           numero_cotizacion: formData.numero_cotizacion,
           cliente_id: formData.cliente_id,
           contacto_nombre: formData.contacto_nombre,
-          tasa_cambio: parseFloat(formData.tasa_cambio),
+          tasa_cambio: formData.tipo === 'internacional' && formData.tasa_cambio ? parseFloat(formData.tasa_cambio) : null,
           vigencia: formData.vigencia,
           modo_transporte: formData.modo_transporte,
-          incoterm: formData.incoterm,
+          incoterm: formData.tipo === 'internacional' ? formData.incoterm : null,
           peso_total: formData.peso_total ? parseFloat(formData.peso_total) : null,
           unidades_carga: formData.unidades_carga ? parseInt(formData.unidades_carga) : null,
           dimension_l: formData.dimension_l ? parseFloat(formData.dimension_l) : null,
           dimension_w: formData.dimension_w ? parseFloat(formData.dimension_w) : null,
           dimension_h: formData.dimension_h ? parseFloat(formData.dimension_h) : null,
-          costo_logistica_usd: formData.costo_logistica_usd ? parseFloat(formData.costo_logistica_usd) : 0,
+          costo_logistica_usd: formData.tipo === 'internacional' && formData.costo_logistica_usd ? parseFloat(formData.costo_logistica_usd) : 0,
+          costo_logistica_cop: formData.tipo === 'nacional' && formData.costo_logistica_cop ? parseFloat(formData.costo_logistica_cop) : 0,
+          ciudad_origen: formData.tipo === 'nacional' ? formData.ciudad_origen : null,
+          ciudad_destino: formData.tipo === 'nacional' ? formData.ciudad_destino : null,
           observaciones: formData.observaciones || null
         })
         .eq('id', cotizacion.id)
@@ -427,7 +435,12 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b">
-          <h2 className="text-2xl font-bold text-gray-800">Editar Cotización</h2>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">Editar Cotización</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Tipo: {formData.tipo === 'nacional' ? 'Nacional (COP)' : 'Internacional (USD)'}
+            </p>
+          </div>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
             <X size={24} />
           </button>
@@ -492,24 +505,57 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
                 />
               </div>
 
-              {/* Tasa de Cambio */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tasa de Cambio (COP/USD) *
-                </label>
-                <input
-                  type="number"
-                  name="tasa_cambio"
-                  value={formData.tasa_cambio}
-                  onChange={handleChange}
-                  required
-                  step="0.01"
-                  placeholder="4000"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <small className="text-gray-500">Ej: 4000 = $4,000 COP por $1 USD</small>
-              </div>
+              {/* Tasa de Cambio - Solo para internacionales */}
+              {formData.tipo === 'internacional' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tasa de Cambio (COP/USD)
+                  </label>
+                  <input
+                    type="number"
+                    name="tasa_cambio"
+                    value={formData.tasa_cambio}
+                    onChange={handleChange}
+                    step="0.01"
+                    placeholder="4000"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <small className="text-gray-500">Ej: 4000 = $4,000 COP por $1 USD</small>
+                </div>
+              )}
             </div>
+
+            {/* Ciudades - Solo para nacionales */}
+            {formData.tipo === 'nacional' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Ciudad de Origen
+                  </label>
+                  <input
+                    type="text"
+                    name="ciudad_origen"
+                    value={formData.ciudad_origen}
+                    onChange={handleChange}
+                    placeholder="Ej: Bogotá"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Ciudad de Destino
+                  </label>
+                  <input
+                    type="text"
+                    name="ciudad_destino"
+                    value={formData.ciudad_destino}
+                    onChange={handleChange}
+                    placeholder="Ej: Medellín"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Vigencia */}
             <div>
@@ -528,18 +574,21 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
             {/* Costo de Logística */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Costo de Logística (USD)
+                Costo de Logística ({formData.tipo === 'nacional' ? 'COP' : 'USD'})
               </label>
               <input
                 type="number"
-                name="costo_logistica_usd"
-                value={formData.costo_logistica_usd}
+                name={formData.tipo === 'nacional' ? 'costo_logistica_cop' : 'costo_logistica_usd'}
+                value={formData.tipo === 'nacional' ? formData.costo_logistica_cop : formData.costo_logistica_usd}
                 onChange={handleChange}
                 step="0.01"
                 placeholder="0.00"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-              <small className="text-gray-500">Costo que se distribuirá entre todas las unidades (precio FOB)</small>
+              <small className="text-gray-500">
+                Costo que se distribuirá entre todas las unidades
+                {formData.tipo === 'internacional' && ' (precio FOB)'}
+              </small>
             </div>
           </div>
 
@@ -564,31 +613,33 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
               </select>
             </div>
 
-            {/* Incoterm */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Incoterm
-              </label>
-              <select
-                name="incoterm"
-                value={formData.incoterm}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Seleccionar...</option>
-                <option value="EXW">EXW - Ex Works</option>
-                <option value="FCA">FCA - Free Carrier</option>
-                <option value="CPT">CPT - Carriage Paid To</option>
-                <option value="CIP">CIP - Carriage and Insurance Paid To</option>
-                <option value="DAP">DAP - Delivered at Place</option>
-                <option value="DPU">DPU - Delivered at Place Unloaded</option>
-                <option value="DDP">DDP - Delivered Duty Paid</option>
-                <option value="FAS">FAS - Free Alongside Ship</option>
-                <option value="FOB">FOB - Free on Board</option>
-                <option value="CFR">CFR - Cost and Freight</option>
-                <option value="CIF">CIF - Cost, Insurance and Freight</option>
-              </select>
-            </div>
+            {/* Incoterm - Solo para internacionales */}
+            {formData.tipo === 'internacional' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Incoterm
+                </label>
+                <select
+                  name="incoterm"
+                  value={formData.incoterm}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Seleccionar...</option>
+                  <option value="EXW">EXW - Ex Works</option>
+                  <option value="FCA">FCA - Free Carrier</option>
+                  <option value="CPT">CPT - Carriage Paid To</option>
+                  <option value="CIP">CIP - Carriage and Insurance Paid To</option>
+                  <option value="DAP">DAP - Delivered at Place</option>
+                  <option value="DPU">DPU - Delivered at Place Unloaded</option>
+                  <option value="DDP">DDP - Delivered Duty Paid</option>
+                  <option value="FAS">FAS - Free Alongside Ship</option>
+                  <option value="FOB">FOB - Free on Board</option>
+                  <option value="CFR">CFR - Cost and Freight</option>
+                  <option value="CIF">CIF - Cost, Insurance and Freight</option>
+                </select>
+              </div>
+            )}
 
             {/* Peso Total */}
             <div>
@@ -744,11 +795,22 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
                   const precioCOP = ref.precio_modificado_cop || referencia?.precio_cop || 0
                   const precioUSD = formData.tasa_cambio ? (precioCOP / parseFloat(formData.tasa_cambio)).toFixed(2) : 0
                   
-                  // Calcular precio FOB
-                  const costoLogisticaUSD = parseFloat(formData.costo_logistica_usd) || 0
+                  // Calcular precio con logística según el tipo
+                  const esNacional = formData.tipo === 'nacional'
                   const totalUnidades = selectedRefs.reduce((sum, r) => sum + parseInt(r.cantidad || 0), 0)
-                  const costoLogisticaPorUnidad = totalUnidades > 0 ? costoLogisticaUSD / totalUnidades : 0
-                  const precioFOB = formData.tasa_cambio ? (parseFloat(precioUSD) + costoLogisticaPorUnidad).toFixed(2) : 0
+                  
+                  let precioConLogistica = 0
+                  if (esNacional) {
+                    // Para nacional: precio COP + logística COP distribuida
+                    const costoLogisticaCOP = parseFloat(formData.costo_logistica_cop) || 0
+                    const costoLogisticaPorUnidadCOP = totalUnidades > 0 ? costoLogisticaCOP / totalUnidades : 0
+                    precioConLogistica = (parseFloat(precioCOP) + costoLogisticaPorUnidadCOP).toFixed(2)
+                  } else {
+                    // Para internacional: precio USD + logística USD distribuida (FOB)
+                    const costoLogisticaUSD = parseFloat(formData.costo_logistica_usd) || 0
+                    const costoLogisticaPorUnidadUSD = totalUnidades > 0 ? costoLogisticaUSD / totalUnidades : 0
+                    precioConLogistica = formData.tasa_cambio ? (parseFloat(precioUSD) + costoLogisticaPorUnidadUSD).toFixed(2) : 0
+                  }
 
                   const referenciaOptions = referencias.map(r => ({
                     value: r.id,
@@ -865,23 +927,25 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
                           />
                         </div>
 
-                        {/* Precio USD */}
-                        <div className="col-span-2">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Precio USD
-                          </label>
-                          <div className="px-3 py-2 bg-gray-100 rounded-lg text-sm font-semibold text-gray-700">
-                            ${precioUSD}
+                        {/* Precio USD - Solo para internacionales */}
+                        {!esNacional && (
+                          <div className="col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Precio USD
+                            </label>
+                            <div className="px-3 py-2 bg-gray-100 rounded-lg text-sm font-semibold text-gray-700">
+                              ${precioUSD}
+                            </div>
                           </div>
-                        </div>
+                        )}
 
-                        {/* Precio FOB */}
-                        <div className="col-span-2">
+                        {/* Precio con Logística (FOB para internacional, Total para nacional) */}
+                        <div className={esNacional ? "col-span-4" : "col-span-2"}>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Precio FOB
+                            {esNacional ? 'Precio + Logística' : 'Precio FOB'}
                           </label>
                           <div className="px-3 py-2 bg-blue-50 rounded-lg text-sm font-semibold text-blue-700">
-                            ${precioFOB}
+                            {esNacional ? `$${parseFloat(precioConLogistica).toLocaleString('es-CO')} COP` : `$${precioConLogistica} USD`}
                           </div>
                         </div>
 
