@@ -5,6 +5,7 @@ import { X, Save } from 'lucide-react'
 export default function EditCliente({ cliente, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     nombre: '',
+    codigo_interno: '',
     pais: '',
     ciudad: '',
     direccion: '',
@@ -19,6 +20,7 @@ export default function EditCliente({ cliente, onClose, onSuccess }) {
     if (cliente) {
       setFormData({
         nombre: cliente.nombre || '',
+        codigo_interno: cliente.codigo_interno || '',
         pais: cliente.pais || '',
         ciudad: cliente.ciudad || '',
         direccion: cliente.direccion || '',
@@ -84,6 +86,21 @@ export default function EditCliente({ cliente, onClose, onSuccess }) {
               onChange={handleChange}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Código Interno */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Código Interno
+            </label>
+            <input
+              type="text"
+              name="codigo_interno"
+              value={formData.codigo_interno}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Ej: CLI-001"
             />
           </div>
 
