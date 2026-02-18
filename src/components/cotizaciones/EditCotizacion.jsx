@@ -124,7 +124,8 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
           cantidad: ref.cantidad,
           precio_modificado_cop: ref.precio_modificado_cop || '',
           numero_caja: ref.numero_caja || '',
-          cantidad_cajas: cantidadCajas
+          cantidad_cajas: cantidadCajas,
+          codigo_cliente: ref.codigo_cliente || ''
         }
       })
       
@@ -142,7 +143,7 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
   }
 
   const handleAddReferencia = () => {
-    setSelectedRefs([...selectedRefs, { referencia_id: '', cantidad: 1, precio_modificado_cop: '', numero_caja: '', cantidad_cajas: '' }])
+    setSelectedRefs([...selectedRefs, { referencia_id: '', cantidad: 1, precio_modificado_cop: '', numero_caja: '', cantidad_cajas: '', codigo_cliente: '' }])
   }
 
   const handleRemoveReferencia = async (index) => {
@@ -400,7 +401,8 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
           cantidad: parseInt(ref.cantidad),
           precio_modificado_cop: ref.precio_modificado_cop ? parseFloat(ref.precio_modificado_cop) : null,
           numero_caja: ref.numero_caja ? parseInt(ref.numero_caja) : null,
-          cantidad_cajas: ref.cantidad_cajas ? parseInt(ref.cantidad_cajas) : null
+          cantidad_cajas: ref.cantidad_cajas ? parseInt(ref.cantidad_cajas) : null,
+          codigo_cliente: ref.codigo_cliente || null
         }
 
         if (ref.id) {
@@ -851,9 +853,10 @@ export default function EditCotizacion({ cotizacion, onClose, onSuccess }) {
                           </label>
                           <input
                             type="text"
-                            value={referencia?.codigo_cliente || ''}
-                            disabled
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-sm text-gray-600"
+                            value={ref.codigo_cliente || referencia?.codigo_cliente || ''}
+                            onChange={(e) => handleReferenciaChange(index, 'codigo_cliente', e.target.value)}
+                            placeholder={referencia?.codigo_cliente || 'Código'}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                           />
                         </div>
 

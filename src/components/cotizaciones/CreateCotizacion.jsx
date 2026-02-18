@@ -118,7 +118,7 @@ export default function CreateCotizacion({ onClose, onSuccess, tipo = 'internaci
   }
 
   const handleAddReferencia = () => {
-    setSelectedRefs([...selectedRefs, { referencia_id: '', cantidad: 1, precio_modificado_cop: '' }])
+    setSelectedRefs([...selectedRefs, { referencia_id: '', cantidad: 1, precio_modificado_cop: '', codigo_cliente: '' }])
   }
 
   const handleRemoveReferencia = (index) => {
@@ -225,7 +225,8 @@ export default function CreateCotizacion({ onClose, onSuccess, tipo = 'internaci
           cotizacion_id: cotizacion.id,
           referencia_id: ref.referencia_id,
           cantidad: parseInt(ref.cantidad),
-          precio_modificado_cop: ref.precio_modificado_cop ? parseFloat(ref.precio_modificado_cop) : null
+          precio_modificado_cop: ref.precio_modificado_cop ? parseFloat(ref.precio_modificado_cop) : null,
+          codigo_cliente: ref.codigo_cliente || null
         }))
 
         const { error: refsError } = await supabase
@@ -580,9 +581,10 @@ export default function CreateCotizacion({ onClose, onSuccess, tipo = 'internaci
 
                   return (
                     <div key={index} className="border rounded-lg p-4 bg-gray-50">
-                      <div className="grid grid-cols-12 gap-3 items-end">
+                      {/* Primera fila */}
+                      <div className="grid grid-cols-12 gap-3 items-end mb-3">
                         {/* Referencia */}
-                        <div className="col-span-5">
+                        <div className="col-span-6">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Referencia
                           </label>
@@ -604,6 +606,20 @@ export default function CreateCotizacion({ onClose, onSuccess, tipo = 'internaci
                           />
                         </div>
 
+                        {/* Código Cliente */}
+                        <div className="col-span-3">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Código Cliente
+                          </label>
+                          <input
+                            type="text"
+                            value={ref.codigo_cliente || referencia?.codigo_cliente || ''}
+                            onChange={(e) => handleReferenciaChange(index, 'codigo_cliente', e.target.value)}
+                            placeholder={referencia?.codigo_cliente || 'Código'}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          />
+                        </div>
+
                         {/* Cantidad */}
                         <div className="col-span-2">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -619,8 +635,23 @@ export default function CreateCotizacion({ onClose, onSuccess, tipo = 'internaci
                           />
                         </div>
 
-                        {/* Precio Modificado */}
-                        <div className="col-span-2">
+                        {/* Eliminar */}
+                        <div className="col-span-1">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveReferencia(index)}
+                            className="w-full bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm"
+                            title="Eliminar"
+                          >
+                            <Trash2 size={18} className="mx-auto" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Segunda fila */}
+                      <div className="grid grid-cols-12 gap-3 items-end">
+                        {/* Precio COP */}
+                        <div className="col-span-6">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Precio COP
                           </label>
@@ -635,25 +666,13 @@ export default function CreateCotizacion({ onClose, onSuccess, tipo = 'internaci
                         </div>
 
                         {/* Precio USD */}
-                        <div className="col-span-2">
+                        <div className="col-span-6">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Precio USD
                           </label>
                           <div className="px-3 py-2 bg-gray-100 rounded-lg text-sm font-semibold text-gray-700">
                             ${precioUSD}
                           </div>
-                        </div>
-
-                        {/* Eliminar */}
-                        <div className="col-span-1">
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveReferencia(index)}
-                            className="text-red-600 hover:text-red-900 p-2"
-                            title="Eliminar"
-                          >
-                            <Trash2 size={18} />
-                          </button>
                         </div>
                       </div>
                     </div>
