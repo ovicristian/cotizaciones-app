@@ -16,13 +16,14 @@ export default function ImportProductosExcel({ referencias, onImport }) {
     // Configurar columnas
     worksheet.columns = [
       { header: 'CODIGO', key: 'codigo', width: 20 },
-      { header: 'CANTIDAD', key: 'cantidad', width: 10 }
+      { header: 'CANTIDAD', key: 'cantidad', width: 10 },
+      { header: 'CODIGO_CLIENTE', key: 'codigo_cliente', width: 20 }
     ]
 
     // Agregar datos de ejemplo
-    worksheet.addRow({ codigo: 'AA-050A', cantidad: 10 })
-    worksheet.addRow({ codigo: 'AA-050B', cantidad: 5 })
-    worksheet.addRow({ codigo: 'AA-070', cantidad: 20 })
+    worksheet.addRow({ codigo: 'AA-050A', cantidad: 10, codigo_cliente: 'CLI-001-A' })
+    worksheet.addRow({ codigo: 'AA-050B', cantidad: 5, codigo_cliente: 'CLI-001-B' })
+    worksheet.addRow({ codigo: 'AA-070', cantidad: 20, codigo_cliente: 'CLI-002' })
 
     // Aplicar estilo al encabezado
     worksheet.getRow(1).font = { bold: true }
@@ -72,6 +73,9 @@ export default function ImportProductosExcel({ referencias, onImport }) {
       const cantidadIndex = headers.findIndex(h => 
         h === 'CANTIDAD' || h === 'QUANTITY' || h === 'QTY' || h === 'CANT'
       )
+      const codigoClienteIndex = headers.findIndex(h => 
+        h === 'CODIGO_CLIENTE' || h === 'CÓDIGO_CLIENTE' || h === 'CODIGO CLIENTE' || h === 'COD_CLIENTE' || h === 'CLIENT_CODE'
+      )
 
       if (codigoIndex === -1) {
         throw new Error('No se encontró la columna CODIGO en el archivo')
@@ -79,6 +83,7 @@ export default function ImportProductosExcel({ referencias, onImport }) {
       if (cantidadIndex === -1) {
         throw new Error('No se encontró la columna CANTIDAD en el archivo')
       }
+      // CODIGO_CLIENTE es opcional, no lanzamos error si no existe
 
       // Procesar filas de datos (desde la segunda fila)
       const productos = []
@@ -90,6 +95,9 @@ export default function ImportProductosExcel({ referencias, onImport }) {
 
         const codigo = row.getCell(codigoIndex + 1).value?.toString().trim()
         const cantidad = row.getCell(cantidadIndex + 1).value
+        const codigoCliente = codigoClienteIndex !== -1 
+          ? row.getCell(codigoClienteIndex + 1).value?.toString().trim() || ''
+          : ''
 
         if (!codigo) return // Saltar filas vacías
 
@@ -110,7 +118,8 @@ export default function ImportProductosExcel({ referencias, onImport }) {
             referencia_id: referencia.id,
             cantidad: cantidadNum,
             precio_modificado_cop: '',
-            numero_caja: ''
+            numero_caja: '',
+            codigo_cliente: codigoCliente
           })
         } else {
           noEncontradas.push(`${codigo} (Fila ${rowNumber})`)
@@ -160,10 +169,11 @@ export default function ImportProductosExcel({ referencias, onImport }) {
           
           <div className="space-y-2 mb-3">
             <p className="text-sm text-blue-700">
-              Sube un archivo Excel con las columnas: <strong>CODIGO</strong> y <strong>CANTIDAD</strong>
+              Sube un archivo Excel con las columnas: <strong>CODIGO</strong>, <strong>CANTIDAD</strong> y <strong>CODIGO_CLIENTE</strong> (opcional)
             </p>
             <p className="text-xs text-blue-600">
-              💡 El código debe coincidir con el nombre exacto de la referencia (ej: AA-050A, AA-070, etc.)
+              💡 El código debe coincidir con el nombre exacto de la referencia (ej: AA-050A, AA-070, etc.)<br/>
+              💡 La columna CODIGO_CLIENTE es opcional y permite especificar un código personalizado por producto
             </p>
             
             {error && (
