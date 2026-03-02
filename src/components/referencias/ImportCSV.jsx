@@ -70,7 +70,8 @@ export default function ImportCSV({ onClose, onSuccess }) {
               descripcion: row.DESCRIPCION || row.descripcion,
               familia: row.familia || row.FAMILIA || null,
               precio_cop: convertirNumero(row.precio),
-              peso_unitario: convertirNumero(row['PESO UNI']),
+              peso_unitario: convertirNumero(row['PESO UNI']) || convertirNumero(row['PESO CAJA']),
+              peso_pieza: convertirNumero(row['PESO PIEZA']) || convertirNumero(row['PESO UND']),
               cantidad_minima_caja: convertirNumero(row['CAN EMPAQUE']) || 
                                     convertirNumero(row.CANTIDAD) || null,
               alto: convertirNumero(row.ALTO),
@@ -129,7 +130,8 @@ export default function ImportCSV({ onClose, onSuccess }) {
             <h3 className="font-semibold text-blue-900 mb-2">Formato del CSV:</h3>
             <ul className="text-sm text-blue-800 space-y-1">
               <li>• Separador: <code className="bg-blue-100 px-1 rounded">;</code> (punto y coma)</li>
-              <li>• Columnas: REFERENCIA;DESCRIPCION;familia;precio;PESO UNI;CAN EMPAQUE;ALTO;ANCHO;LARGO</li>
+              <li>• Columnas: REFERENCIA;DESCRIPCION;familia;precio;PESO UNI;PESO PIEZA;CAN EMPAQUE;ALTO;ANCHO;LARGO</li>
+              <li>• PESO UNI = peso de la caja completa, PESO PIEZA = peso de una unidad</li>
               <li>• Decimales: Usar coma (,) o punto (.)</li>
               <li>• Precios en COP (pesos colombianos)</li>
             </ul>

@@ -149,7 +149,10 @@ export default function Referencias() {
                   HTS Code
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Peso (kg)
+                  Peso Caja (kg)
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Peso Pieza (kg)
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Precio COP
@@ -178,7 +181,10 @@ export default function Referencias() {
                     {referencia.codigo_arancelario || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {referencia.peso_unitario}
+                    {referencia.peso_unitario || '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {referencia.peso_pieza || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     ${referencia.precio_cop?.toLocaleString('es-CO')}

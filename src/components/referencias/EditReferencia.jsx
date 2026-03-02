@@ -10,6 +10,7 @@ export default function EditReferencia({ referencia, onClose, onSuccess }) {
     codigo_arancelario: '',
     precio_cop: '',
     peso_unitario: '',
+    peso_pieza: '',
     cantidad_minima_caja: '',
     alto: '',
     ancho: '',
@@ -27,6 +28,7 @@ export default function EditReferencia({ referencia, onClose, onSuccess }) {
         codigo_arancelario: referencia.codigo_arancelario || '',
         precio_cop: referencia.precio_cop || '',
         peso_unitario: referencia.peso_unitario || '',
+        peso_pieza: referencia.peso_pieza || '',
         cantidad_minima_caja: referencia.cantidad_minima_caja || '',
         alto: referencia.alto || '',
         ancho: referencia.ancho || '',
@@ -56,6 +58,7 @@ export default function EditReferencia({ referencia, onClose, onSuccess }) {
         codigo_arancelario: formData.codigo_arancelario || null,
         precio_cop: parseFloat(formData.precio_cop) || null,
         peso_unitario: parseFloat(formData.peso_unitario) || null,
+        peso_pieza: parseFloat(formData.peso_pieza) || null,
         cantidad_minima_caja: parseInt(formData.cantidad_minima_caja) || null,
         alto: parseFloat(formData.alto) || null,
         ancho: parseFloat(formData.ancho) || null,
@@ -177,10 +180,10 @@ export default function EditReferencia({ referencia, onClose, onSuccess }) {
               />
             </div>
 
-            {/* Peso */}
+            {/* Peso Caja */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Peso (kg)
+                Peso Caja (kg)
               </label>
               <input
                 type="number"
@@ -190,6 +193,23 @@ export default function EditReferencia({ referencia, onClose, onSuccess }) {
                 step="0.001"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              <small className="text-xs text-gray-500">Peso de la caja completa</small>
+            </div>
+
+            {/* Peso Pieza */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Peso Pieza (kg)
+              </label>
+              <input
+                type="number"
+                name="peso_pieza"
+                value={formData.peso_pieza}
+                onChange={handleChange}
+                step="0.001"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <small className="text-xs text-gray-500">Peso de una sola unidad</small>
             </div>
 
             {/* Cantidad mínima */}
